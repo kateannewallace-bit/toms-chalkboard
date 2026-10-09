@@ -27,7 +27,7 @@ const SKILLS = {
   words:    { name: 'Story problems',  levels: ['Adding and taking away to 20', 'Two-digit stories', 'Groups and rows', 'Two steps and sharing'] },
   times:    { name: 'Times tables',    levels: ['×1, ×2, ×5, ×10', '×3 and ×4', 'Up to 10 × 10', 'Up to 12 × 12', 'Bigger facts (×11 to ×25)', 'Two-digit × one-digit (23 × 4)'] },
   missing:  { name: 'Mystery number',  levels: ['☐ + 3 = 7', 'Mystery number to 20', '☐ × 4 = 20', 'Two steps: 2 × ☐ + 1 = 9', 'Letters for numbers (n + 7 = 15)'] },
-  squares:  { name: 'Squares & roots', levels: ['Square numbers (4 × 4)', 'Spot the square number', 'Square roots with blocks', 'Square roots to 144', 'Odd numbers build squares'] },
+  squares:  { name: 'Squares & roots', levels: ['Square numbers to 5 × 5', 'Square numbers to 10 × 10', 'Spot the square number', 'Square roots with blocks (to 10 × 10)', 'Odd numbers build squares', 'Square roots to 12 × 12', 'Squares to 15 × 15 (split into parts)', 'Square roots to 15 × 15', 'Squares to 19 × 19', 'Square roots to 19 × 19', '★ Root detective: the clues', '★ Root detective: solve it (to 30 × 30)'] },
   negatives: { name: 'Below zero',     levels: ['Frog jumps past zero', 'Take away past zero (3 − 5)', 'Start below zero (−4 + 6)', 'Cold-weather stories'] },
   bignums:  { name: 'Big numbers',     levels: ['Thousands blocks', 'Value of a digit to 9,999', 'Value of a digit to 999,999', 'Compare big numbers', 'Listen and find the number'] },
 };
@@ -44,7 +44,7 @@ const goalMet = () => goalDone() >= state.goal.target;
 
 function defaultState() {
   return {
-    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, squares: 1, negatives: 1, bignums: 1 },
+    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, squares: 1, negatives: 1, bignums: 1 }, squaresV2: true,
     on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, squares: false, negatives: false, bignums: false },
     rec: {}, slips: {}, sessions: [], log: [],
     cards: [], stretch: {}, mastered: {}, cleared: 0,
@@ -52,10 +52,18 @@ function defaultState() {
   };
 }
 function normalize(s) {
-  const d = defaultState();
-  s = Object.assign(d, s || {});
+  const d = defaultState(), raw = s || {};
+  const oldSquares = raw.levels && !raw.squaresV2;
+  s = Object.assign(d, raw);
   s.levels = Object.assign(defaultState().levels, s.levels);
   s.on = Object.assign(defaultState().on, s.on);
+  // squares used to have 5 levels; map them onto the new 12-level path
+  if (oldSquares) {
+    const map = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 5 };
+    if (s.levels.squares) s.levels.squares = map[s.levels.squares] || 1;
+    (s.cards || []).forEach(c => { if (c.skill === 'squares') c.level = map[c.level] || 1; });
+    s.squaresV2 = true;
+  }
   // older saves had an on/off read-aloud switch
   if (s.readAloud != null) { s.voice = s.readAloud ? 'all' : 'stories'; delete s.readAloud; }
   // older saves only counted arrays
@@ -337,32 +345,119 @@ function genMissing(L) {
     explain: `${t} − ${k} = ${t - k}, and ${m} × ${x} = ${t - k}. So the mystery number is ${x}.`,
   };
 }
+// Squares build up gradually to 19 × 19, then a stretch "root detective" method for finding square roots.
 function genSquares(L) {
-  if (L === 5) return genOddSquares();
-  if (L === 1) {
-    const n = rand(2, 10);
-    return {
-      skill: 'squares', q: `${n} × ${n}`, visual: blocks(n), speak: `${n} times ${n}`, ans: n * n,
-      distract: [[n * 2, 'doubled instead'], [n * n + n, 'one row too many'], [n * n - n, 'one row too few'], [n * n + 1, 'counting slip']],
-      explain: `${n} × ${n} = ${n * n}. ${n * n} makes a perfect square.`,
-    };
+  const mostly = (lo, hi, oLo, oHi) => rng() < 0.7 ? rand(lo, hi) : rand(oLo, oHi);
+  switch (L) {
+    case 1: return sqNumber(rand(2, 5));
+    case 2: return sqNumber(rand(2, 10));
+    case 3: return sqSpot();
+    case 4: return sqRoot(rand(2, 10), 'blocks');
+    case 5: return genOddSquares();
+    case 6: return sqRoot(mostly(9, 12, 2, 8), 'none');
+    case 7: return sqBig(rand(11, 15));
+    case 8: return sqRoot(rand(11, 15), rng() < 0.5 ? 'area' : 'none');
+    case 9: return sqBig(mostly(16, 19, 11, 15));
+    case 10: return sqRoot(mostly(16, 19, 11, 15), rng() < 0.4 ? 'area' : 'none');
+    case 11: return rootClue();
+    default: return rootSolve();
   }
-  if (L === 2) {
-    const n = rand(2, 10), sq = n * n;
-    const pool = shuffle([sq - 1, sq + 1, sq + 2, sq - 2, n * (n + 1), n * 2, sq + n, sq + 3].filter(v => v > 2 && !isSq(v)));
-    const wrong = [...new Set(pool)].slice(0, 3);
-    return {
-      skill: 'squares', ask: 'Which one is a square number?', speak: 'Which one is a square number? It can make a perfect square of blocks.', ans: sq,
-      choices: [{ v: sq, ok: true }, ...wrong.map(v => ({ v, tag: 'picked a non-square' }))],
-      explain: `${sq} = ${n} × ${n}, so it makes a perfect square.`,
-    };
-  }
-  const n = L === 3 ? rand(2, 8) : rand(2, 12), sq = n * n;
+}
+function sqNumber(n) {
   return {
-    skill: 'squares', q: `√${sq}`, ask: `Which number times itself makes ${sq}?`, visual: L === 3 ? blocks(n) : null,
-    speak: `What is the square root of ${sq}? Which number times itself makes ${sq}?`, ans: n,
-    distract: [[n * 2, 'doubled instead'], [sq, 'copied the number'], [n + 1, 'counting slip'], [n - 1, 'counting slip']],
+    skill: 'squares', q: `${n} × ${n}`, visual: blocks(n), speak: `${n} times ${n}`, ans: n * n,
+    distract: [[n * 2, 'doubled instead'], [n * n + n, 'one row too many'], [n * n - n, 'one row too few'], [n * n + 1, 'counting slip']],
+    explain: `${n} × ${n} = ${n * n}. ${n * n} makes a perfect square.`,
+  };
+}
+function sqSpot() {
+  const n = rand(2, 10), sq = n * n;
+  const pool = shuffle([sq - 1, sq + 1, sq + 2, sq - 2, n * (n + 1), n * 2, sq + n, sq + 3].filter(v => v > 2 && !isSq(v)));
+  const wrong = [...new Set(pool)].slice(0, 3);
+  return {
+    skill: 'squares', ask: 'Which one is a square number?', speak: 'Which one is a square number? It can make a perfect square of blocks.', ans: sq,
+    choices: [{ v: sq, ok: true }, ...wrong.map(v => ({ v, tag: 'picked a non-square' }))],
+    explain: `${sq} = ${n} × ${n}, so it makes a perfect square.`,
+  };
+}
+function sqRoot(n, vis) {
+  const sq = n * n, u = n % 10, twin = n > 10 && u && u !== 5 ? Math.floor(n / 10) * 10 + (10 - u) : null;
+  const d = [[n * 2, 'doubled instead'], [sq, 'copied the number'], [n + 1, 'counting slip'], [n - 1, 'counting slip']];
+  if (twin) d.unshift([twin, 'picked the wrong ending']);
+  return {
+    skill: 'squares', q: `√${sq}`, ask: vis === 'area' ? `This square has ${sq} blocks. How long is each side?` : `Which number times itself makes ${sq}?`,
+    visual: vis === 'blocks' ? blocks(n) : vis === 'area' ? mysterySquare(sq) : null,
+    speak: `What is the square root of ${sq}? Which number times itself makes ${sq}?`, ans: n, distract: d,
     explain: `${n} × ${n} = ${sq}, so √${sq} = ${n}`,
+  };
+}
+// 13 × 13 as an area model: 10 × 10, 10 × 3, 3 × 10 and 3 × 3
+function sqBig(n) {
+  const k = n - 10, sq = n * n;
+  return {
+    skill: 'squares', q: `${n} × ${n}`, visual: areaSvg(n), ask: 'Add up the four parts.', speak: `${n} times ${n}. Split it into 10 and ${k}, then add up the four parts.`, ans: sq,
+    distract: [[100 + k * k, 'forgot the middle parts'], [100 + 10 * k + k * k, 'counted a middle part once'], [n * 2, 'doubled instead'], [sq + 10, 'off by ten'], [sq - 10, 'off by ten']],
+    explain: `10 × 10 = 100, 10 × ${k} = ${10 * k} twice, ${k} × ${k} = ${k * k}. 100 + ${10 * k} + ${10 * k} + ${k * k} = ${sq}`,
+  };
+}
+function areaSvg(n) {
+  const k = n - 10, u = 13, A = 10 * u, B = k * u, pad = 26, W = pad + A + B + 6;
+  const lab = (x, y, w, h, t, cls) => (w >= 46 && h >= 22 ? `<text x="${x + w / 2}" y="${y + h / 2 + 5}" text-anchor="middle" class="area-lab ${cls}">${t}</text>` : '');
+  const grid = (x, y, w, h) => { let d = ''; for (let i = u; i < w; i += u) d += `M${x + i} ${y}v${h}`; for (let j = u; j < h; j += u) d += `M${x} ${y + j}h${w}`; return `<path d="${d}" class="area-grid"/>`; };
+  const x0 = pad, y0 = pad;
+  let s = '';
+  s += `<rect x="${x0}" y="${y0}" width="${A}" height="${A}" class="area a1"/>${grid(x0, y0, A, A)}${lab(x0, y0, A, A, '10 × 10', 'dark')}`;
+  s += `<rect x="${x0 + A}" y="${y0}" width="${B}" height="${A}" class="area a2"/>${grid(x0 + A, y0, B, A)}${lab(x0 + A, y0, B, A, `10 × ${k}`, 'dark')}`;
+  s += `<rect x="${x0}" y="${y0 + A}" width="${A}" height="${B}" class="area a2"/>${grid(x0, y0 + A, A, B)}${lab(x0, y0 + A, A, B, `${k} × 10`, 'dark')}`;
+  s += `<rect x="${x0 + A}" y="${y0 + A}" width="${B}" height="${B}" class="area a3"/>${grid(x0 + A, y0 + A, B, B)}${lab(x0 + A, y0 + A, B, B, `${k} × ${k}`, 'dark')}`;
+  s += `<text x="${x0 + A / 2}" y="${y0 - 8}" text-anchor="middle" class="area-edge">10</text><text x="${x0 + A + B / 2}" y="${y0 - 8}" text-anchor="middle" class="area-edge">${k}</text>`;
+  s += `<text x="${x0 - 8}" y="${y0 + A / 2 + 5}" text-anchor="end" class="area-edge">10</text><text x="${x0 - 8}" y="${y0 + A + B / 2 + 5}" text-anchor="end" class="area-edge">${k}</text>`;
+  return `<svg class="areamodel" viewBox="0 0 ${W} ${W}" width="${Math.round(W * 1.15)}" role="img" aria-label="${n} by ${n} square split into 10 and ${k}">${s}</svg>`;
+}
+function mysterySquare(sq) {
+  return `<svg class="areamodel" viewBox="0 0 200 200" width="200" role="img" aria-label="a square made of ${sq} blocks"><rect x="30" y="30" width="150" height="150" class="area a1"/><text x="105" y="114" text-anchor="middle" class="area-big">${sq}</text><text x="105" y="20" text-anchor="middle" class="area-edge">?</text><text x="16" y="111" text-anchor="middle" class="area-edge">?</text></svg>`;
+}
+
+/* Root detective: the classic way to find a square root in your head.
+   1. Find the tens (10 × 10 = 100, 20 × 20 = 400 ...)  2. The last digit gives two choices  3. Try one and check. */
+const ENDINGS = { 1: '1 or 9', 4: '2 or 8', 9: '3 or 7', 6: '4 or 6', 5: '5', 0: '0' };
+function recipeCard(step) {
+  const steps = ['Find the tens', 'Check the last digit', 'Try it and check'];
+  return `<ol class="recipe">${steps.map((t, i) => `<li class="${step === i + 1 || step === 0 ? 'on' : ''}">${t}</li>`).join('')}</ol>`;
+}
+const tensRef = () => `<div class="sqref">${[10, 20, 30].map(t => `<span>${t} × ${t} = ${t * t}</span>`).join('')}</div>`;
+const endingRef = () => `<div class="sqref">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<span>${d} × ${d} = ${d * d}</span>`).join('')}</div>`;
+function detectiveRoot() { let n; do { n = rand(11, 29); } while (n % 10 === 0); return n; }
+function rootClue() {
+  const n = detectiveRoot(), sq = n * n, t = Math.floor(n / 10) * 10;
+  if (rng() < 0.5) {
+    const opts = [[0, 10], [10, 20], [20, 30], [30, 40]];
+    return {
+      skill: 'squares', q: `√${sq}`, visual: recipeCard(1) + tensRef(), ask: 'Step 1: which tens is it between?',
+      speak: `Root detective, step 1. The square root of ${sq} is between which two tens?`, ans: `${t} and ${t + 10}`,
+      choices: opts.map(([a, b]) => ({ v: `${a} and ${b}`, ok: a === t, tag: 'picked the wrong tens' })),
+      explain: `${t} × ${t} = ${t * t} and ${t + 10} × ${t + 10} = ${(t + 10) ** 2}. ${sq} is in between, so √${sq} is between ${t} and ${t + 10}.`,
+    };
+  }
+  const last = sq % 10, ok = ENDINGS[last];
+  const others = shuffle(Object.values(ENDINGS).filter(v => v !== ok)).slice(0, 3);
+  return {
+    skill: 'squares', q: `√${sq}`, visual: recipeCard(2) + endingRef(), ask: `Step 2: ${sq} ends in ${last}. The root must end in…`,
+    speak: `Root detective, step 2. ${sq} ends in ${last}. Look at the table: which numbers times themselves end in ${last}?`, ans: ok,
+    choices: [{ v: ok, ok: true }, ...others.map(v => ({ v, tag: 'picked the wrong ending' }))],
+    explain: `In the table, ${ok.split(' or ').map(x => `${x} × ${x} = ${x * x}`).join(' and ')} end${ok.includes('or') ? '' : 's'} in ${last}. So the root ends in ${ok}.`,
+  };
+}
+function rootSolve() {
+  const n = detectiveRoot(), sq = n * n, t = Math.floor(n / 10) * 10, u = n % 10, last = sq % 10;
+  const twin = u === 5 ? null : t + (10 - u), mid = t + 5;
+  const d = [[n + 10, 'picked the wrong tens'], [n - 10, 'picked the wrong tens'], [n + 1, 'counting slip'], [n - 1, 'counting slip']];
+  if (twin) d.unshift([twin, 'picked the wrong ending']);
+  const lo = Math.min(n, twin || n), hi = Math.max(n, twin || n);
+  return {
+    skill: 'squares', q: `√${sq}`, visual: recipeCard(0) + tensRef() + endingRef(), ask: 'Be a root detective!',
+    speak: `Root detective! What is the square root of ${sq}? Find the tens, check the last digit, then try it.`, ans: n, distract: d,
+    explain: `1) Between ${t} and ${t + 10}. 2) It ends in ${last}, so the root ends in ${ENDINGS[last]}${twin ? `: ${lo} or ${hi}` : ''}. 3) ${twin ? `${mid} × ${mid} = ${mid * mid}, and ${sq} is ${sq < mid * mid ? 'less' : 'more'}, so it's ${n}. ` : ''}${n} × ${n} = ${sq} ✓`,
   };
 }
 const STORIES = {

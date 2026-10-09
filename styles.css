@@ -300,3 +300,18 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .small-link { font-size: .82rem; padding: 2px 0; }
 .topic-reset { gap: 14px; }
 .topic-reset .link { font-size: .85rem; padding: 2px 0; }
+
+/* squares: area model and root detective */
+.area.a1 { fill: var(--blue); }
+.area.a2 { fill: var(--green); }
+.area.a3 { fill: var(--yellow); }
+.area-grid { fill: none; stroke: var(--board); stroke-opacity: .35; stroke-width: 1; }
+.area-lab { font: 700 15px var(--font); fill: var(--board); }
+.area-edge { font: 700 17px var(--font); fill: var(--chalk); }
+.area-big { font: 700 34px var(--font); fill: var(--board); }
+.recipe { margin: 0; padding: 0; list-style: none; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; counter-reset: step; }
+.recipe li { counter-increment: step; border: 2px solid rgba(238,236,227,.25); border-radius: 12px; padding: 6px 12px; color: var(--chalk-dim); font-size: .95rem; }
+.recipe li::before { content: counter(step) ". "; font-weight: 700; }
+.recipe li.on { border-color: var(--yellow); color: var(--yellow); font-weight: 700; }
+.sqref { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; max-width: 560px; font-variant-numeric: tabular-nums; color: var(--chalk); font-size: .95rem; }
+.sqref span { white-space: nowrap; }
