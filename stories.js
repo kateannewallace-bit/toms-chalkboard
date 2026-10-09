@@ -12,15 +12,41 @@ const WORLDS = {
   hunter: {
     name: () => `${N()} the Hunter`,
     t: {
-      add: ({ a, b }, c) => `${c.H} found ${a} silver arrows by the Bone Bridge. ${c.F} found ${b} more in the Whispering Woods. How many arrows do they have now?`,
+      add: ({ a, b }, c) => `${c.H} found ${a} silver arrows by the Bone Bridge. ${cap(c.F)} found ${b} more in the Whispering Woods. How many arrows do they have now?`,
       sub: ({ a, b }, c) => `${c.H} had ${a} glowing mushrooms. ${cap(c.V)} snatched ${b} of them and ran off into the Moonlit Marsh! How many mushrooms are left?`,
-      more: ({ a, b }, c) => `${c.F} counted ${a} muddy footprints left by ${c.V}. ${c.H} counted ${b}. How many more footprints did ${c.F} count?`,
-      need: ({ T, a }, c) => `To build a trap for ${c.V}, ${c.H} needs ${T} sticks. ${c.F} has gathered ${a}. How many more sticks are needed?`,
-      groups: ({ a, b }, c) => `${c.F} brought ${a} pouches with ${b} magic acorns in each pouch. How many magic acorns is that?`,
+      more: ({ a, b }, c) => `${cap(c.F)} counted ${a} muddy footprints left by ${c.V}. ${c.H} counted ${b}. How many more footprints did ${c.F} count?`,
+      need: ({ T, a }, c) => `To build a trap for ${c.V}, ${c.H} needs ${T} sticks. ${cap(c.F)} has gathered ${a}. How many more sticks are needed?`,
+      groups: ({ a, b }, c) => `${cap(c.F)} brought ${a} pouches with ${b} magic acorns in each pouch. How many magic acorns is that?`,
       share: ({ N, g }, c) => `${c.H} found ${N} gold coins in the hideout of ${c.V} and shared them equally among ${g} friends. How many coins does each friend get?`,
       groupsPlus: ({ a, b, c: x }, c) => `${c.H} filled ${a} quivers with ${b} arrows each. Then ${c.F} added ${x} more arrows. How many arrows altogether?`,
       addSub: ({ a, b, c: x }, c) => `${c.H} had ${a} gold coins and found ${b} more. Then the troll under the Bone Bridge charged ${x} coins to cross. How many coins are left?`,
     },
+    // Stories for particular characters. Each is used only while a cast name contains its keyword.
+    extra: [
+      { kind: 'add', needs: 'gremlin', f: ({ a, b }) => `The gremlins stapled bacon to ${a} machines in the old workshop, then to ${b} more! How many machines have bacon stapled to them?` },
+      { kind: 'sub', needs: 'gremlin', f: ({ a, b }, c) => `The gremlins stapled bacon to ${a} machines to ruin them. ${c.H} pulled the bacon off ${b}. How many machines still have bacon on them?` },
+      { kind: 'groups', needs: 'gremlin', f: ({ a, b }) => `${a} gremlins each stapled bacon to ${b} machines. How many machines did the gremlins ruin?` },
+      { kind: 'groups', needs: 'anansi', f: ({ a, b }) => `Anansi has ${a} sons, and each son spun ${b} webs in the baobab tree. How many webs did they spin?` },
+      { kind: 'share', needs: 'anansi', f: ({ N, g }) => `Anansi tricked the sky god out of ${N} stories and shared them equally among ${g} of his sons. How many stories did each son get?` },
+      { kind: 'more', needs: 'anansi', f: ({ a, b }) => `Anansi told ${a} tricky tales at the fire, and his sons told ${b}. How many more tales did Anansi tell?` },
+      { kind: 'add', needs: 'kappa', f: ({ a, b }) => `Kappa the friendly yokai ate ${a} cucumbers at lunch and ${b} at supper. How many cucumbers did Kappa eat?` },
+      { kind: 'need', needs: 'kappa', f: ({ T, a }) => `Kappa must keep the water dish on his head full, or he loses his strength! It holds ${T} drops and has ${a}. How many more drops does Kappa need?` },
+      { kind: 'need', needs: 'asclepius', f: ({ T, a }) => `Asclepius, god of medicine, needs ${T} healing herbs to cure a sick griffin. He has ${a}. How many more herbs does he need?` },
+      { kind: 'groupsPlus', needs: 'asclepius', f: ({ a, b, c: x }) => `Asclepius mixed ${a} bottles of medicine with ${b} drops of honey in each, then added ${x} more drops for luck. How many drops of honey did he use?` },
+      { kind: 'add', needs: 'tommyknocker', f: ({ a, b }) => `Deep in the mine, the Tommyknocker knocked ${a} times to warn of a cave-in, then ${b} more times. How many knocks?` },
+      { kind: 'addSub', needs: 'tommyknocker', f: ({ a, b, c: x }) => `The Tommyknocker found ${a} silver nuggets, then ${b} more, and left ${x} as a gift for the miners. How many nuggets does he have left?` },
+      { kind: 'add', needs: 'huspalim', f: ({ a, b }) => `The Huspalim took ${a} giant steps across the river and ${b} more up the hill. How many giant steps?` },
+      { kind: 'groups', needs: 'huspalim', f: ({ a, b }) => `The Huspalim carried ${a} armfuls of firewood with ${b} logs in each. How many logs?` },
+      { kind: 'sub', needs: 'cave witch', f: ({ a, b }, c) => `The Somalian Cave Witch had ${a} jars of bad spells. ${c.H} smashed ${b} of them! How many jars of spells are left?` },
+      { kind: 'more', needs: 'cave witch', f: ({ a, b }, c) => `The Somalian Cave Witch has ${a} bats in her cave. ${c.H} has ${b} lanterns to chase them out. How many more bats than lanterns?` },
+      { kind: 'add', needs: 'bigfoot', f: ({ a, b }) => `Black Bigfoot, the Death Raccoon's sidekick, left ${a} giant footprints in the mud and ${b} more in the snow. How many footprints?` },
+      { kind: 'need', needs: 'bigfoot', f: ({ T, a }, c) => `${c.H} needs ${T} feet of rope to tie up Black Bigfoot. ${cap(c.F)} brought ${a} feet. How many more feet of rope are needed?` },
+      { kind: 'sub', needs: 'church vampire', f: ({ a, b }, c) => `The Church Vampires crept toward ${a} sleeping pets. ${c.H} rescued ${b} of them just in time! How many pets still need rescuing?` },
+      { kind: 'share', needs: 'church vampire', f: ({ N, g }, c) => `${c.H} hid ${N} rescued pets from the Church Vampires, sharing them equally among ${g} secret hiding places. How many pets are in each hiding place?` },
+      { kind: 'groups', needs: 'blue-eyed', f: ({ a, b }) => `${a} blue-eyed Tailypos came to the birthday party, and each one made ${b} presents with its two tails. How many presents?` },
+      { kind: 'groupsPlus', needs: 'blue-eyed', f: ({ a, b, c: x }) => `The blue-eyed Tailypos wrapped ${a} birthday presents with ${b} bows on each, then tied ${x} extra bows on the biggest one. How many bows?` },
+      { kind: 'addSub', needs: 'tailypo', f: ({ a, b, c: x }) => `Nobody knows if the Tailypo is good or bad. On Monday it took ${a} socks from the clothesline, on Tuesday ${b} more, and on Wednesday it gave ${x} back. How many socks does the Tailypo still have?` },
+    ],
   },
   knights: {
     name: () => 'Knights & dragons',
@@ -156,6 +182,7 @@ const DRAGONS = ['Fafnir', 'the Lambton Worm', 'the Knucker', 'Y Ddraig Goch'];
 function storyCast() {
   const list = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
   const friends = list(state.cast.friends), villains = list(state.cast.villains);
+  storyCast.text = [state.cast.friends, state.cast.villains, state.cast.others].join(',').toLowerCase();
   return { me: N(), H: `${N()} the Hunter`, K: `${N()} the knight`, D: pick(DRAGONS), F: pick(friends.length ? friends : ['Fu Dog']), V: pick(villains.length ? villains : ['the Death Raccoon']) };
 }
 function pickWorld() {
@@ -196,7 +223,8 @@ const STORY_KINDS = { 1: ['add', 'sub', 'more', 'need'], 2: ['add', 'sub', 'more
 function genWords(L) {
   const kind = pick(STORY_KINDS[L] || STORY_KINDS[4]);
   const world = pickWorld(), n = storyNums(kind, L), cast = storyCast();
-  const story = world.t[kind](n, cast);
+  const extras = (world.extra || []).filter(x => x.kind === kind && storyCast.text.includes(x.needs));
+  const story = (extras.length && rng() < 0.6 ? pick(extras).f : world.t[kind])(n, cast);
   const { ans, d, explain } = storyAnswer(kind, n);
   return {
     skill: 'words', story, speak: story, ans, world: world.name(), explain,

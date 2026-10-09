@@ -49,7 +49,11 @@ function defaultState() {
     rec: {}, slips: {}, sessions: [], log: [],
     cards: [], stretch: {}, mastered: {}, cleared: 0,
     worlds: { hunter: true, knights: true, pixies: true, tailypo: true, greek: true, egypt: true, shakespeare: true, nature: true }, seasonal: true,
-    cast: { friends: 'Fu Dog, Cool Dracula', villains: 'the Death Raccoon' },
+    cast: {
+      friends: 'Fu Dog, Cool Dracula, Kappa the friendly yokai, Anansi, Asclepius, the Tommyknocker, the Huspalim',
+      villains: 'the Death Raccoon, Black Bigfoot, the Somalian Cave Witch, the gremlins, the Church Vampires',
+      others: 'the Tailypo, the blue-eyed Tailypos',
+    },
     done: {}, goal: { skill: 'arrays', target: 50 }, goalBase: {}, total: 0, perSession: 10, voice: 'stories', answerMode: 'choose', narrator: 'tr', updatedAt: 0,
   };
 }
@@ -60,6 +64,8 @@ function normalize(s) {
   s.levels = Object.assign(defaultState().levels, s.levels);
   s.on = Object.assign(defaultState().on, s.on);
   s.worlds = Object.assign(defaultState().worlds, s.worlds);
+  // the first cast list was just Fu Dog, Cool Dracula and the Death Raccoon; bring untouched lists up to the full cast
+  if (raw.cast && raw.cast.friends === 'Fu Dog, Cool Dracula' && raw.cast.villains === 'the Death Raccoon') delete s.cast;
   s.cast = Object.assign(defaultState().cast, s.cast);
   // squares used to have 5 levels; map them onto the new 12-level path
   if (oldSquares) {
@@ -1286,11 +1292,13 @@ function renderStories() {
     <div class="row-btns"><span>Seasonal stories</span><div class="seg"><button data-act="seasonal" data-v="1" aria-pressed="${state.seasonal}">On</button><button data-act="seasonal" data-v="0" aria-pressed="${!state.seasonal}">Off</button></div><span class="note">This month: ${esc(season.name)}</span></div>
     <form class="name-form" id="cast-form">
       <label for="cast-friends">${esc(WORLDS.hunter.name())}: friends</label>
-      <input id="cast-friends" class="pick cast-input" maxlength="200" value="${esc(state.cast.friends)}" placeholder="Fu Dog, Cool Dracula" autocomplete="off">
+      <input id="cast-friends" class="pick cast-input" maxlength="300" value="${esc(state.cast.friends)}" placeholder="Fu Dog, Cool Dracula" autocomplete="off">
       <label for="cast-villains">Villains</label>
-      <input id="cast-villains" class="pick cast-input" maxlength="200" value="${esc(state.cast.villains)}" placeholder="the Death Raccoon" autocomplete="off">
+      <input id="cast-villains" class="pick cast-input" maxlength="300" value="${esc(state.cast.villains)}" placeholder="the Death Raccoon" autocomplete="off">
+      <label for="cast-others">Good, bad or both</label>
+      <input id="cast-others" class="pick cast-input" maxlength="300" value="${esc(state.cast.others)}" placeholder="the Tailypo" autocomplete="off">
       <div class="row-btns"><button class="ghost" type="submit">Save characters</button>${castSaved ? '<span class="note">Saved.</span>' : ''}</div>
-      <p class="note">Separate names with commas. Write "the" in front of a name if the story should say "the Death Raccoon."</p>
+      <p class="note">Separate names with commas. Write "the" in front of a name if the story should say "the Death Raccoon." Some characters have their own stories (the gremlins, Anansi, Kappa, Asclepius, the Tommyknocker, the Huspalim, the Cave Witch, Black Bigfoot, the Church Vampires and the Tailypos); those appear while the name is in a list.</p>
     </form>
   </section>`;
 }
@@ -1394,7 +1402,7 @@ app.addEventListener('click', e => {
 app.addEventListener('submit', e => {
   if (e.target.id === 'cast-form') {
     e.preventDefault();
-    state.cast = { friends: document.getElementById('cast-friends').value.trim(), villains: document.getElementById('cast-villains').value.trim() };
+    state.cast = { friends: document.getElementById('cast-friends').value.trim(), villains: document.getElementById('cast-villains').value.trim(), others: document.getElementById('cast-others').value.trim() };
     castSaved = true; save(); render();
     return;
   }
