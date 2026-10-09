@@ -48,7 +48,7 @@ function defaultState() {
     on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, squares: false, negatives: false, bignums: false },
     rec: {}, slips: {}, sessions: [], log: [],
     cards: [], stretch: {}, mastered: {}, cleared: 0,
-    done: {}, goal: { skill: 'arrays', target: 50 }, goalBase: {}, total: 0, perSession: 10, readAloud: false, answerMode: 'choose', narrator: 'tr', updatedAt: 0,
+    done: {}, goal: { skill: 'arrays', target: 50 }, goalBase: {}, total: 0, perSession: 10, voice: 'stories', answerMode: 'choose', narrator: 'tr', updatedAt: 0,
   };
 }
 function normalize(s) {
@@ -56,6 +56,8 @@ function normalize(s) {
   s = Object.assign(d, s || {});
   s.levels = Object.assign(defaultState().levels, s.levels);
   s.on = Object.assign(defaultState().on, s.on);
+  // older saves had an on/off read-aloud switch
+  if (s.readAloud != null) { s.voice = s.readAloud ? 'all' : 'stories'; delete s.readAloud; }
   // older saves only counted arrays
   if (s.arraysDone != null) { s.done.arrays = Math.max(s.done.arrays || 0, s.arraysDone); delete s.arraysDone; }
   return s;
@@ -858,7 +860,8 @@ function buildSession() {
 function startSession() { sess = buildSession(); screen = 'play'; render(); autoSay(); }
 function autoSay() {
   const p = sess.probs[sess.i];
-  const line = p.story || p.ask || state.readAloud ? (p.speak || spoken(p.q || '')) : '';
+  if (state.voice === 'off') return;
+  const line = p.story || p.ask || state.voice === 'all' ? (p.speak || spoken(p.q || '')) : '';
   if (line) say(line);
 }
 function gotIt(p) {
@@ -951,7 +954,7 @@ function next() {
   save();
   if (tr()) sess.photo = nextPhoto();
   screen = 'done'; render();
-  if (tr()) { const s = sess.results.filter(Boolean).length; say(`${document.querySelector('h1')?.textContent || ''} ${s} out of ${sess.results.length} on the first try.`, true); }
+  if (tr() && state.voice !== 'off') { const s = sess.results.filter(Boolean).length; say(`${document.querySelector('h1')?.textContent || ''} ${s} out of ${sess.results.length} on the first try.`, true); }
 }
 // Up: 5 in a row, 7 of the last 8, or 3 stretch problems in a row, all right on the first try.
 // Down: 4 misses in the last 6. Finishing the top level masters the topic and turns on the next one.
@@ -1154,7 +1157,8 @@ function renderParent() {
       <select id="voice" class="pick">${['', ...voices.map(v => v.name)].map(nm => `<option value="${esc(nm)}" ${nm === savedVoiceName() ? 'selected' : ''}>${nm ? esc(nm) : `Automatic${chosenVoice() ? ` (${esc(chosenVoice().name)})` : ''}`}</option>`).join('')}</select>
       <button class="ghost" data-act="try-voice">Try it</button></div>
     <p class="note">Voices come from this device. On an iPad or Mac, much better ones are free under Settings → Accessibility → Spoken Content → System Voice → Manage Voices. Look for “Enhanced” or “Premium” English voices (Daniel or Arthur suit the Colonel), then pick one here. The choice is remembered on each device.</p>` : ''}
-    <div class="row-btns"><span>Read every problem aloud</span><div class="seg"><button data-act="read" data-v="1" aria-pressed="${state.readAloud}">On</button><button data-act="read" data-v="0" aria-pressed="${!state.readAloud}">Stories only</button></div></div>
+    <div class="row-btns"><span>Read aloud</span><div class="seg">${[['all', 'Every problem'], ['stories', 'Stories only'], ['off', 'Off']].map(([v, t]) => `<button data-act="read" data-v="${v}" aria-pressed="${state.voice === v}">${t}</button>`).join('')}</div></div>
+    <p class="note">${state.voice === 'off' ? 'Nothing is read out on its own. The speaker button still reads a problem when tapped.' : state.voice === 'stories' ? 'Story problems and instructions are read out. Plain number problems stay quiet.' : 'Every problem is read out when it appears.'}</p>
   </section>
   ${renderReview()}
   <section>
@@ -1246,7 +1250,7 @@ app.addEventListener('click', e => {
   else if (act === 'per') { state.perSession = +b.dataset.n; save(); render(); }
   else if (act === 'narr') { state.narrator = b.dataset.v; save(); render(); say(tr() ? 'Bully! Colonel Roosevelt, reporting for arithmetic duty!' : `${greet('Hello')} Ready for some math?`, true); }
   else if (act === 'try-voice') say('Seven times eight is fifty-six.');
-  else if (act === 'read') { state.readAloud = b.dataset.v === '1'; save(); render(); }
+  else if (act === 'read') { state.voice = b.dataset.v; save(); render(); }
   else if (act === 'sync-new') { startSync(newCode()); render(); }
   else if (act === 'sync-join') {
     const code = cleanCode(document.getElementById('join-code')?.value || '');
