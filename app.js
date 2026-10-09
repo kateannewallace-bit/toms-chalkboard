@@ -1,13 +1,17 @@
-const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-const pick = a => a[Math.floor(Math.random() * a.length)];
-const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// All problem randomness goes through rng(), which makeProblem seeds so a missed problem can come back exactly.
+let rng = Math.random;
+function seeded(seed) { let t = seed >>> 0; return () => { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
+const newSeed = () => Math.floor(Math.random() * 2 ** 31);
+const rand = (a, b) => a + Math.floor(rng() * (b - a + 1));
+const pick = a => a[Math.floor(rng() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const isSq = n => Number.isInteger(Math.sqrt(n));
 const BOX = '<span class="box" aria-label="mystery number"></span>';
 
 const SKILLS = {
-  add:      { name: 'Adding',          levels: ['Sums to 10', 'Make a ten (8 + 7)', 'Two-digit + one-digit, carrying', 'Two-digit + two-digit, carrying', 'Three-digit + two-digit', 'Three-digit + three-digit'] },
-  sub:      { name: 'Taking away',     levels: ['Within 10', 'Within 20', 'Two-digit − one-digit', 'Two-digit − two-digit, no borrowing', 'Two-digit with borrowing'] },
+  add:      { name: 'Adding',          levels: ['Sums to 10', 'Make a ten (8 + 7)', 'Two-digit + one-digit, carrying', 'Two-digit + two-digit, carrying', 'Three-digit + two-digit', 'Three-digit + three-digit', 'Four-digit adding'] },
+  sub:      { name: 'Taking away',     levels: ['Within 10', 'Within 20', 'Two-digit − one-digit', 'Two-digit − two-digit, no borrowing', 'Two-digit with borrowing', 'Three-digit with borrowing'] },
   place:    { name: 'Place value',     levels: ['Tens and ones blocks', 'Hundreds, tens and ones blocks', 'Value of a digit', 'Expanded form (300 + 40 + 6)', 'Compare with > and <', 'Regrouping (13 tens)'] },
   patterns: { name: 'Counting patterns', levels: ['Skip-count by 5s and 10s', 'Even or odd?', 'Count by 10s and 100s from any number', 'Count back by 10s and 100s'] },
   arrays:   { name: 'Arrays',          levels: ['How many dots?', 'Match the number sentence', 'Bigger arrays', 'Equal rows (first sharing)'] },
@@ -17,8 +21,8 @@ const SKILLS = {
   graphs:   { name: 'Graphs',          levels: ['Picture graphs', 'Bar graphs', 'How many more?', 'How many in all?'] },
   shapes:   { name: 'Shapes',          levels: ['Count the sides', 'Name the shape', 'Halves, thirds and fourths', 'More sides and equal parts'] },
   words:    { name: 'Story problems',  levels: ['Adding and taking away to 20', 'Two-digit stories', 'Groups and rows', 'Two steps and sharing'] },
-  times:    { name: 'Times tables',    levels: ['×1, ×2, ×5, ×10', '×3 and ×4', 'Up to 10 × 10', 'Up to 12 × 12', 'Bigger facts (×11 to ×25)'] },
-  missing:  { name: 'Mystery number',  levels: ['☐ + 3 = 7', 'Mystery number to 20', '☐ × 4 = 20', 'Two steps: 2 × ☐ + 1 = 9'] },
+  times:    { name: 'Times tables',    levels: ['×1, ×2, ×5, ×10', '×3 and ×4', 'Up to 10 × 10', 'Up to 12 × 12', 'Bigger facts (×11 to ×25)', 'Two-digit × one-digit (23 × 4)'] },
+  missing:  { name: 'Mystery number',  levels: ['☐ + 3 = 7', 'Mystery number to 20', '☐ × 4 = 20', 'Two steps: 2 × ☐ + 1 = 9', 'Letters for numbers (n + 7 = 15)'] },
   squares:  { name: 'Squares & roots', levels: ['Square numbers (4 × 4)', 'Spot the square number', 'Square roots with blocks', 'Square roots to 144', 'Odd numbers build squares'] },
   negatives: { name: 'Below zero',     levels: ['Frog jumps past zero', 'Take away past zero (3 − 5)', 'Start below zero (−4 + 6)', 'Cold-weather stories'] },
   bignums:  { name: 'Big numbers',     levels: ['Thousands blocks', 'Value of a digit to 9,999', 'Value of a digit to 999,999', 'Compare big numbers', 'Listen and find the number'] },
@@ -35,6 +39,7 @@ function defaultState() {
     levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, squares: 1, negatives: 1, bignums: 1 },
     on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, squares: false, negatives: false, bignums: false },
     rec: {}, slips: {}, sessions: [], log: [],
+    cards: [], stretch: {}, mastered: {}, cleared: 0,
     arraysDone: 0, total: 0, perSession: 10, readAloud: false, answerMode: 'choose', narrator: 'tr', updatedAt: 0,
   };
 }
@@ -168,7 +173,7 @@ function nextPhoto() {
   let last = -1;
   try { last = +(localStorage.getItem('toms-chalkboard-photo') ?? -1); } catch (e) {}
   let i;
-  do { i = Math.floor(Math.random() * TR_PHOTOS.length); } while (i === last && TR_PHOTOS.length > 1);
+  do { i = Math.floor(rng() * TR_PHOTOS.length); } while (i === last && TR_PHOTOS.length > 1);
   try { localStorage.setItem('toms-chalkboard-photo', String(i)); } catch (e) {}
   return TR_PHOTOS[i];
 }
@@ -178,7 +183,7 @@ const spoken = s => String(s).replace(/×/g, ' times ').replace(/−/g, ' minus 
 function column(a, b, op) {
   const A = String(a), B = String(b), w = Math.max(A.length, B.length);
   const line = (s, lead) => `<span class="cc op">${lead}</span>` + [...s.padStart(w, ' ')].map(ch => `<span class="cc">${ch.trim()}</span>`).join('');
-  return `<div class="column" style="--w:${w + 1}" aria-label="${a} ${op === '+' ? 'plus' : 'minus'} ${b}">${line(A, '')}${line(B, op)}<span class="rule"></span></div>`;
+  return `<div class="column" style="--w:${w + 1}" aria-label="${a} ${{ '+': 'plus', '−': 'minus', '×': 'times' }[op]} ${b}">${line(A, '')}${line(B, op)}<span class="rule"></span></div>`;
 }
 function dots(r, c) {
   const d = c > 7 || r > 7 ? 22 : 30, g = d > 24 ? 10 : 8;
@@ -199,15 +204,18 @@ function genAdd(L) {
   else if (L === 3) { do { a = rand(11, 89); b = rand(2, 9); } while ((a % 10) + b < 10); }
   else if (L === 4) { do { a = rand(11, 89); b = rand(11, 89); } while ((a % 10) + (b % 10) < 10); }
   else if (L === 5) { do { a = rand(101, 899); b = rand(11, 99); } while ((a % 10) + (b % 10) < 10); }
-  else { do { a = rand(101, 599); b = rand(101, 399); } while ((a % 10) + (b % 10) < 10); }
+  else if (L === 6) { do { a = rand(101, 599); b = rand(101, 399); } while ((a % 10) + (b % 10) < 10); }
+  else { do { a = rand(1001, 5999); b = rand(1001, 3999); } while ((a % 10) + (b % 10) < 10); }
   const ans = a + b, au = a % 10, bu = b % 10;
   const d = [];
   if (L >= 3) d.push([ans - 10, 'forgot to carry']);
+  if (L >= 5) d.push([ans - 100, 'forgot to carry']);
+  if (L >= 7) d.push([ans - 1000, 'forgot to carry']);
   d.push([ans + 10, 'off by ten'], [ans + 1, 'counting slip'], [ans - 1, 'counting slip']);
   let explain = `${a} + ${b} = ${ans}`;
   if (L === 2) explain = `${a} + ${10 - a} makes 10, then ${b - (10 - a)} more makes ${ans}.`;
   if (L >= 3) explain = `Ones first: ${au} + ${bu} = ${au + bu}. Write ${(au + bu) % 10}, carry 1 ten. ${a} + ${b} = ${ans}`;
-  const useBlocks = (L === 3 || L === 4) && Math.random() < 0.5;
+  const useBlocks = (L === 3 || L === 4) && rng() < 0.5;
   const visual = L === 2 ? tenFrames(a, b, 'add') : useBlocks ? pvSvg([a, b], 2) : L >= 3 ? column(a, b, '+') : null;
   return { skill: 'add', q: L >= 3 && !useBlocks ? null : `${a} + ${b}`, visual, speak: `${a} plus ${b}`, ans, distract: d, explain: useBlocks ? `${au} + ${bu} = ${au + bu} ones. Trade 10 ones for a ten. ${a} + ${b} = ${ans}` : explain };
 }
@@ -217,13 +225,14 @@ function genSub(L) {
   else if (L === 2) { a = rand(11, 20); b = rand(2, 9); }
   else if (L === 3) { do { a = rand(21, 99); b = rand(1, 9); } while (b > a % 10); }
   else if (L === 4) { do { a = rand(30, 99); b = rand(11, a - 10); } while (b % 10 > a % 10); }
-  else { do { a = rand(31, 98); b = rand(12, a - 10); } while (!(a % 10 < b % 10)); }
+  else if (L === 5) { do { a = rand(31, 98); b = rand(12, a - 10); } while (!(a % 10 < b % 10)); }
+  else { do { a = rand(300, 999); b = rand(101, a - 60); } while (!(a % 10 < b % 10)); }
   const ans = a - b, au = a % 10, bu = b % 10;
   const d = [];
-  if (L === 5) d.push([(Math.floor(a / 10) - Math.floor(b / 10)) * 10 + (bu - au), 'took the small digit from the big one']);
+  if (L >= 5) d.push([[...String(a)].reverse().reduce((t, ch, i) => t + Math.abs(+ch - +(String(b).padStart(String(a).length, '0')[String(a).length - 1 - i])) * 10 ** i, 0), 'took the small digit from the big one']);
   d.push([a + b, 'added instead of taking away'], [ans + 1, 'counting slip'], [ans - 1, 'counting slip'], [ans + 10, 'off by ten']);
-  const explain = L === 5 ? `Not enough ones to take ${bu} from ${au}, so borrow a ten: ${au + 10} − ${bu} = ${au + 10 - bu}. ${a} − ${b} = ${ans}` : `${a} − ${b} = ${ans}`;
-  const frames = L <= 2 && Math.random() < 0.5;
+  const explain = L >= 5 ? `Not enough ones to take ${bu} from ${au}, so borrow a ten: ${au + 10} − ${bu} = ${au + 10 - bu}. ${a} − ${b} = ${ans}` : `${a} − ${b} = ${ans}`;
+  const frames = L <= 2 && rng() < 0.5;
   return { skill: 'sub', q: L >= 4 ? null : `${a} − ${b}`, visual: L >= 4 ? column(a, b, '−') : frames ? tenFrames(a, b, 'sub') : null, speak: `${a} minus ${b}`, ans, distract: d, explain };
 }
 function genTimes(L) {
@@ -232,8 +241,16 @@ function genTimes(L) {
   else if (L === 2) { a = pick([3, 4]); b = rand(1, 10); }
   else if (L === 3) { a = rand(2, 10); b = rand(2, 10); }
   else if (L === 4) { a = rand(2, 12); b = rand(2, 12); }
-  else { a = pick([11, 12, 15, 20, 25]); b = rand(2, 12); }
-  if (Math.random() < 0.5) [a, b] = [b, a];
+  else if (L === 5) { a = pick([11, 12, 15, 20, 25]); b = rand(2, 12); }
+  else {
+    a = rand(13, 49); b = rand(3, 9);
+    if (a % 10 === 0) a++;
+    const t = Math.floor(a / 10), o = a % 10, ans = a * b;
+    return { skill: 'times', visual: column(a, b, '×'), speak: `${a} times ${b}`, ans,
+      distract: [[t * b * 10 + (o * b) % 10, 'forgot to carry'], [t * b * 10, 'only multiplied the tens'], [t * 10 + o * b, 'only multiplied the ones'], [ans + 10, 'off by ten'], [ans - 10, 'off by ten']],
+      explain: `${t * 10} × ${b} = ${t * 10 * b} and ${o} × ${b} = ${o * b}. ${t * 10 * b} + ${o * b} = ${ans}` };
+  }
+  if (rng() < 0.5) [a, b] = [b, a];
   const ans = a * b;
   return {
     skill: 'times', q: `${a} × ${b}`, speak: `${a} times ${b}`, ans,
@@ -268,9 +285,16 @@ function genArrays(L) {
   };
 }
 function genMissing(L) {
-  if (L === 1 || (L === 2 && Math.random() < 0.5)) {
+  if (L === 5) {
+    const N = '<em class="var">n</em>', kind = rand(0, 2);
+    if (kind === 0) { const a = rand(6, 29), x = rand(4, 30), s = a + x; return { skill: 'missing', q: `${N} + ${a} = ${s}`, ask: 'What number is n?', speak: `n plus ${a} equals ${s}. What number is n?`, ans: x, distract: [[s + a, 'added the numbers'], [x + 1, 'counting slip'], [x - 1, 'counting slip'], [x + 10, 'off by ten']], explain: `n is ${x}, because ${x} + ${a} = ${s}.` }; }
+    if (kind === 1) { const a = rand(5, 25), r = rand(4, 30), x = a + r; return { skill: 'missing', q: `${N} − ${a} = ${r}`, ask: 'What number is n?', speak: `n minus ${a} equals ${r}. What number is n?`, ans: x, distract: [[r - a < 0 ? r + 1 : r - a, 'took away instead of adding back'], [x + 1, 'counting slip'], [x - 1, 'counting slip'], [x + 10, 'off by ten']], explain: `n is ${x}, because ${x} − ${a} = ${r}.` }; }
+    const a = rand(3, 12), x = rand(3, 12), p = a * x;
+    return { skill: 'missing', q: `${a} × ${N} = ${p}`, ask: 'What number is n?', speak: `${a} times n equals ${p}. What number is n?`, ans: x, distract: [[p - a, 'took away instead'], [x + 1, 'next fact over'], [x - 1, 'next fact over'], [p, 'copied the total']], explain: `n is ${x}, because ${a} × ${x} = ${p}.` };
+  }
+  if (L === 1 || (L === 2 && rng() < 0.5)) {
     const s = L === 1 ? rand(3, 10) : rand(11, 20), a = L === 1 ? rand(1, s - 1) : rand(2, 9), x = s - a;
-    const first = Math.random() < 0.5;
+    const first = rng() < 0.5;
     return {
       skill: 'missing', q: first ? `${BOX} + ${a} = ${s}` : `${a} + ${BOX} = ${s}`, speak: `What number plus ${a} makes ${s}?`, ans: x,
       distract: [[s + a, 'added the numbers'], [x + 1, 'counting slip'], [x - 1, 'counting slip'], [s, 'copied the total']],
@@ -494,7 +518,7 @@ function barGraph(set, vals) {
 
 const SHAPE_NAMES = { 3: 'triangle', 4: 'square', 5: 'pentagon', 6: 'hexagon', 8: 'octagon' };
 function polygonSvg(n) {
-  const c = 80, r = 64, rot = n === 4 ? Math.PI / 4 : -Math.PI / 2 + (Math.random() < 0.5 ? 0 : Math.PI / n);
+  const c = 80, r = 64, rot = n === 4 ? Math.PI / 4 : -Math.PI / 2 + (rng() < 0.5 ? 0 : Math.PI / n);
   const pts = Array.from({ length: n }, (_, i) => `${f1(c + r * Math.cos(rot + i * 2 * Math.PI / n))},${f1(c + r * Math.sin(rot + i * 2 * Math.PI / n))}`).join(' ');
   return `<svg class="shape" viewBox="0 0 160 160" width="170" role="img" aria-label="a shape"><polygon points="${pts}" class="poly"/></svg>`;
 }
@@ -506,7 +530,7 @@ function partsSvg(kind, k) {
     for (let i = 0; i < k; i++) { const [x, y] = pt(i); s += `<line x1="${c}" y1="${c}" x2="${f1(x)}" y2="${f1(y)}" class="part-line"/>`; }
     return `<svg class="shape" viewBox="0 0 160 160" width="170" role="img" aria-label="a circle cut into ${k} equal parts">${s}</svg>`;
   }
-  const w = 200, h = 110, x0 = 10, y0 = 10, grid4 = k === 4 && Math.random() < 0.5;
+  const w = 200, h = 110, x0 = 10, y0 = 10, grid4 = k === 4 && rng() < 0.5;
   let s = '';
   if (grid4) s += `<rect x="${x0}" y="${y0}" width="${w / 2}" height="${h / 2}" class="part-on"/><line x1="${x0 + w / 2}" y1="${y0}" x2="${x0 + w / 2}" y2="${y0 + h}" class="part-line"/><line x1="${x0}" y1="${y0 + h / 2}" x2="${x0 + w}" y2="${y0 + h / 2}" class="part-line"/>`;
   else { s += `<rect x="${x0}" y="${y0}" width="${f1(w / k)}" height="${h}" class="part-on"/>`; for (let i = 1; i < k; i++) s += `<line x1="${f1(x0 + i * w / k)}" y1="${y0}" x2="${f1(x0 + i * w / k)}" y2="${y0 + h}" class="part-line"/>`; }
@@ -538,18 +562,18 @@ function genPlace(L) {
   if (L === 4) {
     let h, t, o; do { h = rand(1, 9); t = rand(1, 9); o = rand(1, 9); } while (t === o || h === t);
     const n = h * 100 + t * 10 + o;
-    if (Math.random() < 0.5) return { skill: 'place', q: `${h * 100} + ${t * 10} + ${o}`, ask: 'What number is this?', speak: `${h * 100} plus ${t * 10} plus ${o}. What number is this?`, ans: n, distract: [[h + t + o, 'added the digits'], [h * 100 + o * 10 + t, 'mixed up tens and ones'], [h * 1000 + t * 10 + o, 'wrote each part in a row'], [n + 10, 'off by ten']], explain: `${h} hundreds, ${t} tens and ${o} ones make ${n}.` };
+    if (rng() < 0.5) return { skill: 'place', q: `${h * 100} + ${t * 10} + ${o}`, ask: 'What number is this?', speak: `${h * 100} plus ${t * 10} plus ${o}. What number is this?`, ans: n, distract: [[h + t + o, 'added the digits'], [h * 100 + o * 10 + t, 'mixed up tens and ones'], [h * 1000 + t * 10 + o, 'wrote each part in a row'], [n + 10, 'off by ten']], explain: `${h} hundreds, ${t} tens and ${o} ones make ${n}.` };
     const ok = `${h * 100} + ${t * 10} + ${o}`;
     return { skill: 'place', q: String(n), ask: 'Which is the same number?', speak: `Which one is the same as ${n}?`, ans: ok, choices: [{ v: ok, ok: true }, { v: `${h} + ${t} + ${o}`, tag: 'added the digits' }, { v: `${h * 100} + ${o * 10} + ${t}`, tag: 'mixed up tens and ones' }, { v: `${h * 10} + ${t * 100} + ${o}`, tag: 'mixed up hundreds and tens' }], explain: `${n} = ${ok}` };
   }
   if (L === 5) {
     const a = rand(100, 999);
-    let b = Math.random() < 0.15 ? a : Math.random() < 0.5 ? Math.floor(a / 100) * 100 + rand(0, 99) : rand(100, 999);
+    let b = rng() < 0.15 ? a : rng() < 0.5 ? Math.floor(a / 100) * 100 + rand(0, 99) : rand(100, 999);
     const sym = a > b ? '>' : a < b ? '<' : '=';
     const name = { '>': 'is greater than', '<': 'is less than', '=': 'equals' };
     return { skill: 'place', q: `${a} ${BOX} ${b}`, ask: 'Which sign goes in the box?', speak: `Which sign goes between ${a} and ${b}? Greater than, less than, or equal?`, ans: sym, choices: [{ v: '>', ok: sym === '>', tag: 'flipped the sign', say: 'greater than' }, { v: '<', ok: sym === '<', tag: 'flipped the sign', say: 'less than' }, { v: '=', ok: sym === '=', tag: 'thought they were equal', say: 'equal' }], explain: `${a} ${name[sym]} ${b}. Compare the hundreds first, then the tens, then the ones.` };
   }
-  const h = rand(1, 6), bigTens = Math.random() < 0.5, t = bigTens ? rand(10, 15) : rand(1, 8), o = bigTens ? rand(0, 9) : rand(10, 16);
+  const h = rand(1, 6), bigTens = rng() < 0.5, t = bigTens ? rand(10, 15) : rand(1, 8), o = bigTens ? rand(0, 9) : rand(10, 16);
   const n = h * 100 + t * 10 + o;
   return { skill: 'place', visual: pvSvg(null, 3, [{ h, t, o }]), ask: 'What number do the blocks show?', speak: `${h} hundreds, ${t} tens and ${o} ones. What number is that?`, ans: n, distract: [[n - (bigTens ? 100 : 10), bigTens ? 'forgot to trade 10 tens for a hundred' : 'forgot to trade 10 ones for a ten'], [n + 100, 'miscounted the hundreds'], [n + 10, 'miscounted the tens'], [n - 1, 'counting slip']], explain: bigTens ? `${t} tens is 1 hundred and ${t - 10} tens. So ${h + 1} hundreds, ${t - 10} tens and ${o} ones make ${n}.` : `${o} ones is 1 ten and ${o - 10} ones. So ${h} hundreds, ${t + 1} tens and ${o - 10} ones make ${n}.` };
 }
@@ -598,7 +622,7 @@ function genTime(L) {
   return { skill: 'time', visual: clockSvg(h, m), ask: 'What time is it?', speak: 'What time does the clock show? The short hand shows the hour.', ans: ok, choices, explain: `The short hand points ${m ? 'past' : 'to'} ${h}, and the long hand points to ${m === 0 ? '12' : m / 5}. It is ${ok}${said !== ok ? ` (${said})` : ''}.` };
 }
 function genMeasure(L) {
-  const unit = Math.random() < 0.6 ? 'cm' : 'inches', fmt = v => `${v} ${unit === 'cm' ? 'cm' : v === 1 ? 'inch' : 'inches'}`;
+  const unit = rng() < 0.6 ? 'cm' : 'inches', fmt = v => `${v} ${unit === 'cm' ? 'cm' : v === 1 ? 'inch' : 'inches'}`;
   if (L === 1 || L === 2) {
     const max = unit === 'cm' ? 13 : 10, len = rand(2, L === 1 ? max - 1 : max - 4), start = L === 1 ? 0 : rand(1, max - len);
     const d = [[len + 1, 'counted the tick marks'], [len - 1, 'counting slip']];
@@ -634,8 +658,8 @@ function genGraphs(L) {
 function genShapes(L) {
   if (L === 1 || L === 4) {
     const n = L === 1 ? rand(3, 6) : rand(5, 9);
-    if (L === 4 && Math.random() < 0.5) {
-      const k = rand(2, 6), kind = k <= 4 && Math.random() < 0.5 ? 'circle' : 'rect';
+    if (L === 4 && rng() < 0.5) {
+      const k = rand(2, 6), kind = k <= 4 && rng() < 0.5 ? 'circle' : 'rect';
       return { skill: 'shapes', visual: partsSvg(kind, k), ask: 'How many equal parts?', speak: 'How many equal parts is the shape cut into?', ans: k, distract: [[k - 1, 'counted the lines'], [k + 1, 'counting slip'], [k + 2, 'counting slip']], explain: `There are ${k} equal parts.` };
     }
     return { skill: 'shapes', visual: polygonSvg(n), ask: 'How many sides?', speak: 'How many sides does this shape have? Count the straight edges.', ans: n, distract: [[n + 1, 'counted one side twice'], [n - 1, 'missed a side'], [n + 2, 'counting slip']], explain: `It has ${n} sides and ${n} corners.` };
@@ -645,7 +669,7 @@ function genShapes(L) {
     const others = shuffle(Object.values(SHAPE_NAMES).filter(v => v !== ok)).slice(0, 3);
     return { skill: 'shapes', visual: polygonSvg(n), ask: 'What is this shape called?', speak: 'What is this shape called?', ans: ok, choices: [{ v: ok, ok: true }, ...others.map(v => ({ v, tag: 'mixed up shape names' }))], explain: `It has ${n} sides, so it is a ${ok}.` };
   }
-  const k = pick([2, 3, 4]), kind = Math.random() < 0.5 ? 'circle' : 'rect', names = { 2: 'one half', 3: 'one third', 4: 'one fourth' };
+  const k = pick([2, 3, 4]), kind = rng() < 0.5 ? 'circle' : 'rect', names = { 2: 'one half', 3: 'one third', 4: 'one fourth' };
   return { skill: 'shapes', visual: partsSvg(kind, k), ask: 'What part is shaded?', speak: 'What part of the shape is shaded?', ans: names[k], choices: [2, 3, 4].map(x => ({ v: names[x], ok: x === k, tag: 'mixed up halves, thirds and fourths' })), explain: `The shape is cut into ${k} equal parts and 1 is shaded: ${names[k]}.` };
 }
 
@@ -672,7 +696,7 @@ function genNegatives(L) {
     speak = `The frog starts at ${a} and jumps back ${b}. Where does it land?`;
   } else if (L === 2) {
     a = rand(0, 8); b = rand(a + 1, a + 9); ans = a - b; q = `${a} − ${b}`;
-    visual = Math.random() < 0.5 ? numberLineSvg(-10, 10, a, 0) : null; speak = `${a} minus ${b}`;
+    visual = rng() < 0.5 ? numberLineSvg(-10, 10, a, 0) : null; speak = `${a} minus ${b}`;
   } else if (L === 3) {
     a = -rand(1, 9); b = rand(1, 15); ans = a + b; q = `${signed(a)} + ${b}`; speak = `negative ${-a} plus ${b}`;
   } else {
@@ -703,7 +727,7 @@ function genBignums(L) {
       explain: `The ${dgt} is in the ${names[place]} place, so it is worth ${commas(dgt * place)}.` };
   }
   if (L === 4) {
-    const a = rand(1000, 999999); let b = Math.random() < 0.5 ? a + pick([-1, 1]) * pick([10, 100, 1000, 10000]) : rand(1000, 999999); if (b < 1000) b = a + 100;
+    const a = rand(1000, 999999); let b = rng() < 0.5 ? a + pick([-1, 1]) * pick([10, 100, 1000, 10000]) : rand(1000, 999999); if (b < 1000) b = a + 100;
     const sym = a > b ? '>' : a < b ? '<' : '=';
     return { skill: 'bignums', q: `${commas(a)} ${BOX} ${commas(b)}`, ask: 'Which sign goes in the box?', speak: `Which sign goes between ${a} and ${b}? Greater than, less than, or equal?`, ans: sym,
       choices: [{ v: '>', ok: sym === '>', tag: 'flipped the sign', say: 'greater than' }, { v: '<', ok: sym === '<', tag: 'flipped the sign', say: 'less than' }, { v: '=', ok: sym === '=', tag: 'thought they were equal', say: 'equal' }],
@@ -763,32 +787,62 @@ function buildChoices(ans, distract, neg) {
   }
   return shuffle(out);
 }
-function makeProblem(skill) {
-  const level = state.levels[skill];
-  const p = GEN[skill](level);
-  p.level = level;
-  p.choices = p.choices ? shuffle(p.choices) : buildChoices(p.ans, p.distract, p.neg);
-  if (p.choices.every(c => c.say || (typeof c.v === 'string' && !/\d/.test(c.v)))) p.speak = `${p.speak || ''} ${listOr(p.choices.map(c => c.say || c.v))}?`.trim();
-  p.tries = 0; p.wrong = []; p.done = false; p.revealed = false;
-  p.key = (p.q || '') + (p.story || '') + (p.visual || '') + p.ans;
-  return p;
+// kind: 'current' (his level), 'easier' (review a level below), 'stretch' (next level up), 'again' (spaced review of a miss)
+function makeProblem(skill, level = state.levels[skill], seed = newSeed(), kind = 'current') {
+  level = Math.max(1, Math.min(level, SKILLS[skill].levels.length));
+  rng = seeded(seed);
+  try {
+    const p = GEN[skill](level);
+    p.level = level; p.seed = seed; p.kind = kind;
+    p.choices = p.choices ? shuffle(p.choices) : buildChoices(p.ans, p.distract, p.neg);
+    if (p.choices.every(c => c.say || (typeof c.v === 'string' && !/\d/.test(c.v)))) p.speak = `${p.speak || ''} ${listOr(p.choices.map(c => c.say || c.v))}?`.trim();
+    p.tries = 0; p.wrong = []; p.done = false; p.revealed = false;
+    p.key = (p.q || '') + (p.story || '') + (p.visual || '') + p.ans;
+    return p;
+  } finally { rng = Math.random; }
 }
 
 /* ---------- session ---------- */
 let screen = 'home', sess = null, lastChanges = [], confirmReset = false;
+/* Each round mixes four kinds of problems:
+   - spaced review of concepts he missed, due today (up to 30% of the round)
+   - his current level (most problems)
+   - an easier level now and then (about 1 in 7), to keep old skills fresh
+   - a stretch problem from the next level (about 1 in 9) once he is doing well */
+const REVIEW_DAYS = [1, 3, 7, 14, 30];
+const DAY = 864e5;
+const startOfDay = () => new Date().setHours(0, 0, 0, 0);
+const UNLOCK_ORDER = ['add', 'sub', 'place', 'arrays', 'times', 'words', 'money', 'time', 'patterns', 'measure', 'graphs', 'shapes', 'missing', 'squares', 'bignums', 'negatives'];
+function readyToStretch(k) {
+  const r = (state.rec[k] || []).slice(-6);
+  return r.length >= 4 && r.filter(Boolean).length / r.length >= 0.75;
+}
+function dueCards() {
+  const now = Date.now();
+  return state.cards.filter(c => c.due <= now && SKILLS[c.skill]).sort((a, b) => a.due - b.due);
+}
 function buildSession() {
   let on = ORDER.filter(k => state.on[k]);
   if (!on.length) on = ['times'];
-  const rotation = shuffle(on);
+  const n = state.perSession, plan = [];
+  for (const c of dueCards().slice(0, Math.ceil(n * 0.3))) plan.push({ skill: c.skill, level: c.level, seed: c.box === 0 ? c.seed : newSeed(), kind: 'again', card: c.id });
+  let rotation = shuffle(on.filter(k => !state.mastered[k] || Math.random() < 0.5));
+  if (!rotation.length) rotation = shuffle(on);
   if (on.includes('arrays') && on.length > 1 && state.arraysDone < ARRAY_GOAL) rotation.push('arrays');
-  const n = state.perSession, seen = new Set(), probs = [];
-  const skills = shuffle(Array.from({ length: n }, (_, i) => rotation[i % rotation.length]));
-  for (const k of skills) {
-    let p, tries = 0;
-    do { p = makeProblem(k); tries++; } while (seen.has(p.key) && tries < 8);
+  for (let i = 0; plan.length < n; i++) {
+    const k = rotation[i % rotation.length], L = state.levels[k], max = SKILLS[k].levels.length, roll = Math.random();
+    if (roll < 0.15 && L > 1) plan.push({ skill: k, level: L - 1 - (L > 2 && Math.random() < 0.3 ? 1 : 0), kind: 'easier' });
+    else if (roll > 0.89 && L < max && readyToStretch(k)) plan.push({ skill: k, level: L + 1, kind: 'stretch' });
+    else plan.push({ skill: k, level: L, kind: 'current' });
+  }
+  const seen = new Set(), probs = [];
+  for (const it of shuffle(plan)) {
+    let p = makeProblem(it.skill, it.level, it.seed ?? newSeed(), it.kind);
+    for (let tries = 0; seen.has(p.key) && tries < 8; tries++) p = makeProblem(it.skill, it.level, newSeed(), it.kind);
+    p.card = it.card;
     seen.add(p.key); probs.push(p);
   }
-  return { probs, i: 0, results: [] };
+  return { probs, i: 0, results: [], cleared: 0 };
 }
 function startSession() { sess = buildSession(); screen = 'play'; render(); autoSay(); }
 function autoSay() {
@@ -853,11 +907,29 @@ function keypadHtml(p) {
 }
 function record(p, first) {
   sess.results.push(first);
-  (state.rec[p.skill] = state.rec[p.skill] || []).push(first);
-  state.rec[p.skill] = state.rec[p.skill].slice(-10);
   state.total++;
   if (p.skill === 'arrays') state.arraysDone++;
+  if (p.kind === 'current') state.rec[p.skill] = [...(state.rec[p.skill] || []), first].slice(-10);
+  if (p.kind === 'stretch') state.stretch[p.skill] = [...(state.stretch[p.skill] || []), first].slice(-5);
+  if (p.kind === 'again') reviewCard(p.card, first);
+  else if (!first && p.kind !== 'stretch') addCard(p);
   save();
+}
+// A missed concept comes back tomorrow, then after 3, 7, 14 and 30 days while he keeps getting it right.
+function addCard(p) {
+  const due = startOfDay() + DAY * REVIEW_DAYS[0];
+  const same = state.cards.find(c => c.skill === p.skill && c.level === p.level);
+  if (same) { Object.assign(same, { box: 0, seed: p.seed, due, misses: same.misses + 1 }); return; }
+  state.cards.push({ id: newSeed().toString(36), skill: p.skill, level: p.level, seed: p.seed, box: 0, due, misses: 1, added: Date.now() });
+  if (state.cards.length > 60) state.cards.sort((a, b) => a.added - b.added).shift();
+}
+function reviewCard(id, first) {
+  const c = state.cards.find(x => x.id === id);
+  if (!c) return;
+  if (!first) { Object.assign(c, { box: 0, due: startOfDay() + DAY, misses: c.misses + 1 }); return; }
+  c.box++;
+  if (c.box >= REVIEW_DAYS.length) { state.cards = state.cards.filter(x => x !== c); state.cleared = (state.cleared || 0) + 1; sess.cleared++; return; }
+  c.due = startOfDay() + DAY * REVIEW_DAYS[c.box];
 }
 function next() {
   if (sess.i < sess.probs.length - 1) { sess.i++; render(); autoSay(); return; }
@@ -870,13 +942,21 @@ function next() {
   screen = 'done'; render();
   if (tr()) { const s = sess.results.filter(Boolean).length; say(`${document.querySelector('h1')?.textContent || ''} ${s} out of ${sess.results.length} on the first try.`, true); }
 }
+// Up: 5 in a row, 7 of the last 8, or 3 stretch problems in a row, all right on the first try.
+// Down: 4 misses in the last 6. Finishing the top level masters the topic and turns on the next one.
 function adjustLevels(used) {
   const changes = [];
   for (const k of used) {
-    const r = state.rec[k] || [], max = SKILLS[k].levels.length;
-    const last8 = r.slice(-8), last6 = r.slice(-6);
-    if (last8.length >= 8 && last8.filter(Boolean).length >= 7 && state.levels[k] < max) { state.levels[k]++; state.rec[k] = []; changes.push([k, 'up']); }
-    else if (last6.length >= 6 && last6.filter(Boolean).length <= 2 && state.levels[k] > 1) { state.levels[k]--; state.rec[k] = []; changes.push([k, 'down']); }
+    const r = state.rec[k] || [], st = state.stretch[k] || [], max = SKILLS[k].levels.length;
+    const last8 = r.slice(-8), last6 = r.slice(-6), last5 = r.slice(-5);
+    const up = (last8.length >= 8 && last8.filter(Boolean).length >= 7) || (last5.length === 5 && last5.every(Boolean)) || (st.length >= 3 && st.slice(-3).every(Boolean));
+    if (up && state.levels[k] < max) { state.levels[k]++; state.rec[k] = []; state.stretch[k] = []; changes.push([k, 'up']); }
+    else if (up && !state.mastered[k]) {
+      state.mastered[k] = Date.now(); changes.push([k, 'mastered']);
+      const nk = UNLOCK_ORDER.find(x => !state.on[x] && !state.mastered[x]);
+      if (nk) { state.on[nk] = true; changes.push([nk, 'unlocked']); }
+    }
+    else if (last6.length >= 6 && last6.filter(Boolean).length <= 2 && state.levels[k] > 1) { state.levels[k]--; state.rec[k] = []; state.stretch[k] = []; changes.push([k, 'down']); }
   }
   for (const [k, dir] of changes) state.log.unshift({ d: new Date().toISOString(), k, dir, to: state.levels[k] });
   state.log = state.log.slice(0, 30);
@@ -884,6 +964,7 @@ function adjustLevels(used) {
 }
 
 /* ---------- rendering ---------- */
+const KIND_LABEL = { again: ' · <b class="tag again">Practice again</b>', easier: ' · <b class="tag easier">Review</b>', stretch: ' · <b class="tag stretch">★ Stretch</b>' };
 const app = document.getElementById('app');
 const speakerIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19.5 5.5a9 9 0 0 1 0 13"/></svg>';
 function tallySvg(filled) {
@@ -934,7 +1015,7 @@ function renderPlay() {
   return `
   <div class="play-top">
     <div class="ticks" aria-label="Problem ${sess.i + 1} of ${sess.probs.length}">${ticks}</div>
-    <span class="skill-label">${SKILLS[p.skill].name} · level ${p.level}</span>
+    <span class="skill-label">${SKILLS[p.skill].name} · level ${p.level}${KIND_LABEL[p.kind] || ''}</span>
     ${canSpeak ? `<button class="say" data-act="say" aria-label="Read it out loud">${speakerIcon}</button>` : ''}
   </div>
   <div class="problem" id="problem">
@@ -972,6 +1053,18 @@ function printRound() {
   window.print();
 }
 
+function roundNews() {
+  const mastered = lastChanges.filter(c => c[1] === 'mastered'), unlocked = lastChanges.filter(c => c[1] === 'unlocked');
+  const again = sess.probs.filter(p => p.kind === 'again'), againRight = again.filter((p, i) => sess.results[sess.probs.indexOf(p)]).length;
+  const stretch = sess.probs.filter(p => p.kind === 'stretch'), stretchRight = stretch.filter(p => sess.results[sess.probs.indexOf(p)]).length;
+  const lines = [];
+  if (unlocked.length) lines.push(...unlocked.map(([k]) => `<li class="big-news">New topic unlocked: <strong>${SKILLS[k].name}</strong>!</li>`));
+  if (mastered.length) lines.push(...mastered.map(([k]) => `<li>${SKILLS[k].name}: top level mastered. It will still come back now and then.</li>`));
+  if (stretch.length) lines.push(`<li>★ Stretch problems: ${stretchRight} of ${stretch.length} right.</li>`);
+  if (again.length) lines.push(`<li>Practiced again from earlier days: ${againRight} of ${again.length} right${sess.cleared ? `, and ${sess.cleared} ${sess.cleared === 1 ? 'is' : 'are'} learned for good` : ''}.</li>`);
+  return lines.length ? `<section><h2>This round</h2><ul class="ups">${lines.join('')}</ul></section>` : '';
+}
+
 function renderDone() {
   const score = sess.results.filter(Boolean).length, n = sess.results.length;
   const head = tr()
@@ -988,6 +1081,7 @@ function renderDone() {
       <div class="stars">${sess.results.map(starSvg).join('')}</div>
     </div>
   </div>
+  ${roundNews()}
   ${ups.length ? `<section><h2>Moving up</h2><ul class="ups">${ups.map(([k]) => `<li>${SKILLS[k].name}: now level ${state.levels[k]}, ${esc(SKILLS[k].levels[state.levels[k] - 1])}</li>`).join('')}</ul></section>` : ''}
   ${handsOn()}
   <div class="row-btns"><button class="start" data-act="start">Another ${state.perSession}</button><button class="ghost" data-act="home">Home</button></div>`;
@@ -997,14 +1091,14 @@ function renderParent() {
   const slips = Object.entries(state.slips).filter(([k]) => !k.endsWith('|counting slip')).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const lv = ORDER.map(k => {
     const L = state.levels[k], max = SKILLS[k].levels.length, r = state.rec[k] || [];
-    return `<div class="lvl"><div><strong>${SKILLS[k].name}</strong><small>${esc(SKILLS[k].levels[L - 1])}${r.length ? ` · ${r.filter(Boolean).length} of last ${r.length} right first try` : ''}</small></div>
+    return `<div class="lvl"><div><strong>${SKILLS[k].name}</strong><small>${state.mastered[k] ? '<b class="tag stretch">Mastered</b> ' : ''}${esc(SKILLS[k].levels[L - 1])}${r.length ? ` · ${r.filter(Boolean).length} of last ${r.length} right first try` : ''}</small></div>
       <div class="stepper"><button data-act="lvl" data-k="${k}" data-d="-1" aria-label="Lower ${SKILLS[k].name} level" ${L <= 1 ? 'disabled' : ''}>−</button><span>${L}/${max}</span><button data-act="lvl" data-k="${k}" data-d="1" aria-label="Raise ${SKILLS[k].name} level" ${L >= max ? 'disabled' : ''}>+</button></div></div>`;
   }).join('');
   return `
   <header class="top"><h1>For grown-ups</h1><button class="ghost" data-act="home">Back to Tom</button></header>
   <section>
     <h2>Levels</h2>
-    <p class="note">A topic moves up after 7 of the last 8 right on the first try, and back down after 4 misses in 6. You can nudge it yourself here.</p>
+    <p class="note">A topic moves up after 5 in a row, 7 of the last 8, or 3 ★ stretch problems in a row, all right on the first try. It moves back down after 4 misses in 6. Finishing the top level masters a topic and turns on the next one. You can nudge levels yourself here.</p>
     <div class="levels">${lv}</div>
   </section>
   <section>
@@ -1019,6 +1113,7 @@ function renderParent() {
     <p class="note">Voices come from this device. On an iPad or Mac, much better ones are free under Settings → Accessibility → Spoken Content → System Voice → Manage Voices. Look for “Enhanced” or “Premium” English voices (Daniel or Arthur suit the Colonel), then pick one here. The choice is remembered on each device.</p>` : ''}
     <div class="row-btns"><span>Read every problem aloud</span><div class="seg"><button data-act="read" data-v="1" aria-pressed="${state.readAloud}">On</button><button data-act="read" data-v="0" aria-pressed="${!state.readAloud}">Stories only</button></div></div>
   </section>
+  ${renderReview()}
   <section>
     <h2>Paper practice</h2>
     <p class="note">Print ${state.perSession} problems from the topics turned on at home, with boxes for him to write his answers and an answer key on the last page.</p>
@@ -1041,6 +1136,16 @@ function renderParent() {
     </div>
   </section>
   ${renderSync()}`;
+}
+
+function renderReview() {
+  const cards = state.cards.slice().sort((a, b) => a.due - b.due);
+  const when = d => { const days = Math.round((d - startOfDay()) / DAY); return days <= 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`; };
+  return `<section>
+    <h2>Coming back for review</h2>
+    <p class="note">Anything Tom misses comes back tomorrow, then after 3, 7, 14 and 30 days while he keeps getting it right. The first time it's the same problem, after that new numbers. ${state.cleared ? `${state.cleared} learned for good so far.` : ''}</p>
+    ${cards.length ? `<ul class="list">${cards.slice(0, 12).map(c => `<li><span>${SKILLS[c.skill] ? SKILLS[c.skill].name : c.skill} · ${esc(SKILLS[c.skill]?.levels[c.level - 1] || '')}</span><span>${when(c.due)} · step ${c.box + 1} of ${REVIEW_DAYS.length}</span></li>`).join('')}</ul>${cards.length > 12 ? `<p class="note">and ${cards.length - 12} more</p>` : ''}` : '<p class="note">Nothing to review yet.</p>'}
+  </section>`;
 }
 
 function renderSync() {

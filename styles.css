@@ -275,3 +275,11 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
   .box { border-color: #1d1d1d; }
   .hl { color: #1d1d1d; border-color: #1d1d1d; }
 }
+
+/* problem kinds */
+.tag { font-weight: 700; border-radius: 999px; padding: 1px 8px; font-size: .8rem; }
+.tag.again { color: var(--board); background: var(--pink); }
+.tag.easier { color: var(--board); background: var(--blue); }
+.tag.stretch { color: var(--board); background: var(--yellow); }
+.big-news { color: var(--yellow); font-size: 1.15rem; }
+.var { font-style: italic; color: var(--yellow); font-family: Georgia, "Times New Roman", serif; }
