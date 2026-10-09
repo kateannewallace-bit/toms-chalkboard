@@ -816,7 +816,7 @@ function makeProblem(skill, level = state.levels[skill], seed = newSeed(), kind 
 }
 
 /* ---------- session ---------- */
-let screen = 'home', sess = null, lastChanges = [], confirmReset = false;
+let screen = 'home', sess = null, lastChanges = [], confirmReset = false, confirmWipe = false, wiped = false;
 /* Each round mixes four kinds of problems:
    - spaced review of missed concepts, due today (up to 30% of the round)
    - the current level (most problems)
@@ -1184,6 +1184,14 @@ function renderParent() {
       ${confirmReset ? `<button class="ghost danger" data-act="reset-yes">Yes, start a new ${state.goal.target}</button><button class="link" data-act="reset-no">Cancel</button>` : `<button class="ghost" data-act="reset">Start a new ${state.goal.target}</button>`}
     </div>
   </section>
+  <section>
+    <h2>Start over</h2>
+    <p class="note">Clears levels, scores, the review list, goals and recent rounds, and resets which topics are on. Keeps the name, settings and sync. ${syncAvailable && sync.code ? 'Synced devices will start over too.' : ''}</p>
+    <div class="row-btns">
+      ${confirmWipe ? `<button class="ghost danger" data-act="wipe-yes">Yes, erase all progress</button><button class="link" data-act="wipe-no">Cancel</button>` : `<button class="ghost danger" data-act="wipe">Reset all progress</button>`}
+    </div>
+    ${wiped ? '<p class="note">Progress cleared. Everything starts fresh.</p>' : ''}
+  </section>
   ${renderSync()}`;
 }
 
@@ -1243,7 +1251,7 @@ app.addEventListener('click', e => {
   else if (act === 'print') printRound();
   else if (act === 'next') next();
   else if (act === 'say') { const p = sess.probs[sess.i]; say(p.speak || spoken(p.q || '')); }
-  else if (act === 'home') { screen = 'home'; confirmReset = false; render(); }
+  else if (act === 'home') { screen = 'home'; confirmReset = false; confirmWipe = false; wiped = false; render(); }
   else if (act === 'parent') { screen = 'parent'; render(); }
   else if (act === 'chip') { state.on[b.dataset.k] = !state.on[b.dataset.k]; save(); render(); }
   else if (act === 'lvl') { const k = b.dataset.k; state.levels[k] = Math.max(1, Math.min(SKILLS[k].levels.length, state.levels[k] + +b.dataset.d)); state.rec[k] = []; save(); render(); }
@@ -1264,6 +1272,14 @@ app.addEventListener('click', e => {
       const r = document.createRange(); r.selectNodeContents(document.getElementById('sync-code'));
       const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
     });
+  }
+  else if (act === 'wipe') { confirmWipe = true; wiped = false; render(); }
+  else if (act === 'wipe-no') { confirmWipe = false; render(); }
+  else if (act === 'wipe-yes') {
+    const keep = { childName: state.childName, voice: state.voice, answerMode: state.answerMode, narrator: state.narrator, perSession: state.perSession };
+    state = Object.assign(defaultState(), keep);
+    confirmWipe = false; wiped = true; sess = null; lastChanges = [];
+    save(); render();
   }
   else if (act === 'reset') { confirmReset = true; render(); }
   else if (act === 'reset-no') { confirmReset = false; render(); }
