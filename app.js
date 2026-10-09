@@ -36,7 +36,11 @@ const GROUPS = [
   { title: 'Beyond 2nd grade', note: '', keys: ['times', 'missing', 'squares', 'negatives', 'bignums'] },
 ];
 const ORDER = Object.keys(SKILLS);
-const ARRAY_GOAL = 50;
+const GOAL_SIZES = [25, 50, 100];
+// The goal tally can follow any topic. Each topic keeps its own count, so switching goals loses nothing.
+const goalSkill = () => SKILLS[state.goal.skill] ? state.goal.skill : 'arrays';
+const goalDone = () => Math.max(0, (state.done[goalSkill()] || 0) - (state.goalBase[goalSkill()] || 0));
+const goalMet = () => goalDone() >= state.goal.target;
 
 function defaultState() {
   return {
@@ -44,7 +48,7 @@ function defaultState() {
     on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, squares: false, negatives: false, bignums: false },
     rec: {}, slips: {}, sessions: [], log: [],
     cards: [], stretch: {}, mastered: {}, cleared: 0,
-    arraysDone: 0, total: 0, perSession: 10, readAloud: false, answerMode: 'choose', narrator: 'tr', updatedAt: 0,
+    done: {}, goal: { skill: 'arrays', target: 50 }, goalBase: {}, total: 0, perSession: 10, readAloud: false, answerMode: 'choose', narrator: 'tr', updatedAt: 0,
   };
 }
 function normalize(s) {
@@ -52,6 +56,8 @@ function normalize(s) {
   s = Object.assign(d, s || {});
   s.levels = Object.assign(defaultState().levels, s.levels);
   s.on = Object.assign(defaultState().on, s.on);
+  // older saves only counted arrays
+  if (s.arraysDone != null) { s.done.arrays = Math.max(s.done.arrays || 0, s.arraysDone); delete s.arraysDone; }
   return s;
 }
 
@@ -833,7 +839,7 @@ function buildSession() {
   for (const c of dueCards().slice(0, Math.ceil(n * 0.3))) plan.push({ skill: c.skill, level: c.level, seed: c.box === 0 ? c.seed : newSeed(), kind: 'again', card: c.id });
   let rotation = shuffle(on.filter(k => !state.mastered[k] || Math.random() < 0.5));
   if (!rotation.length) rotation = shuffle(on);
-  if (on.includes('arrays') && on.length > 1 && state.arraysDone < ARRAY_GOAL) rotation.push('arrays');
+  if (on.includes(goalSkill()) && on.length > 1 && !goalMet()) rotation.push(goalSkill());
   for (let i = 0; plan.length < n; i++) {
     const k = rotation[i % rotation.length], L = state.levels[k], max = SKILLS[k].levels.length, roll = Math.random();
     if (roll < 0.15 && L > 1) plan.push({ skill: k, level: L - 1 - (L > 2 && Math.random() < 0.3 ? 1 : 0), kind: 'easier' });
@@ -913,7 +919,7 @@ function keypadHtml(p) {
 function record(p, first) {
   sess.results.push(first);
   state.total++;
-  if (p.skill === 'arrays') state.arraysDone++;
+  state.done[p.skill] = (state.done[p.skill] || 0) + 1;
   if (p.kind === 'current') state.rec[p.skill] = [...(state.rec[p.skill] || []), first].slice(-10);
   if (p.kind === 'stretch') state.stretch[p.skill] = [...(state.stretch[p.skill] || []), first].slice(-5);
   if (p.kind === 'again') reviewCard(p.card, first);
@@ -989,24 +995,47 @@ function nameForm(label, button) {
   </form>`;
 }
 
+// One segment per level: finished levels are full, the current one fills toward the next level-up.
+function levelPct(k) {
+  if (state.mastered[k]) return 1;
+  const r = state.rec[k] || [];
+  let streak = 0;
+  for (let i = r.length - 1; i >= 0 && r[i]; i--) streak++;
+  const st = state.stretch[k] || [];
+  let sStreak = 0;
+  for (let i = st.length - 1; i >= 0 && st[i]; i--) sStreak++;
+  return Math.min(0.95, Math.max(streak / 5, r.slice(-8).filter(Boolean).length / 7, sStreak / 3));
+}
+function levelBar(k) {
+  const max = SKILLS[k].levels.length, L = state.levels[k], pct = levelPct(k);
+  const segs = Array.from({ length: max }, (_, i) => {
+    const fill = state.mastered[k] || i < L - 1 ? 1 : i === L - 1 ? pct : 0;
+    return `<span class="seg-bar"><i style="width:${Math.round(fill * 100)}%"></i></span>`;
+  }).join('');
+  return `<span class="lvlbar ${state.mastered[k] ? 'done' : ''}" role="img" aria-label="Level ${L} of ${max}${state.mastered[k] ? ', mastered' : ''}">${segs}</span>`;
+}
+
 function renderHome() {
-  const done = Math.min(state.arraysDone, ARRAY_GOAL);
+  const gk = goalSkill(), target = state.goal.target, done = Math.min(goalDone(), target);
   let tally = '';
-  for (let g = 0; g < ARRAY_GOAL / 5; g++) tally += tallySvg(Math.max(0, Math.min(5, done - g * 5)));
+  for (let g = 0; g < target / 5; g++) tally += tallySvg(Math.max(0, Math.min(5, done - g * 5)));
   const today = new Date().toDateString();
   const todayCount = state.sessions.filter(s => new Date(s.d).toDateString() === today).reduce((t, s) => t + s.n, 0);
   return `
   <header class="top"><h1>${esc(greet('Hello'))}</h1><button class="link" data-act="parent">For grown-ups</button></header>
   ${childName() ? '' : nameForm("Who's practicing?", 'Start')}
   <section>
-    <div class="goal-head"><h2>Array goal</h2><span class="count">${state.arraysDone} / ${ARRAY_GOAL}</span></div>
-    <div class="tally" role="img" aria-label="${state.arraysDone} of ${ARRAY_GOAL} array problems done">${tally}</div>
-    ${state.arraysDone >= ARRAY_GOAL ? '<p class="meta">Goal reached. Arrays will keep coming up in mixed practice.</p>' : ''}
+    <div class="goal-head">
+      <div class="goal-pick"><label for="goal-skill">Goal</label><select id="goal-skill" class="pick">${GROUPS.map(g => `<optgroup label="${g.title}">${g.keys.map(k => `<option value="${k}" ${k === gk ? 'selected' : ''}>${SKILLS[k].name}</option>`).join('')}</optgroup>`).join('')}</select></div>
+      <span class="count">${goalDone()} / ${target}</span>
+    </div>
+    <div class="tally" role="img" aria-label="${goalDone()} of ${target} ${SKILLS[gk].name} problems done">${tally}</div>
+    ${goalMet() ? `<p class="meta">Goal reached! ${SKILLS[gk].name} will keep coming up in mixed practice. Pick a new goal, or start a new ${target} on the grown-ups page.</p>` : ''}
   </section>
   <section>
     <h2>What shall we practice?</h2>
     ${GROUPS.map(g => `<div class="group"><h3>${g.title}${g.note ? ` <small>${g.note}</small>` : ''}</h3>
-    <div class="chips">${g.keys.map(k => `<button class="chip" data-act="chip" data-k="${k}" aria-pressed="${!!state.on[k]}"><strong>${SKILLS[k].name}</strong><small>Level ${state.levels[k]} · ${esc(SKILLS[k].levels[state.levels[k] - 1])}</small></button>`).join('')}</div></div>`).join('')}
+    <div class="chips">${g.keys.map(k => `<button class="chip" data-act="chip" data-k="${k}" aria-pressed="${!!state.on[k]}"><strong>${SKILLS[k].name}</strong><small>Level ${state.levels[k]} · ${esc(SKILLS[k].levels[state.levels[k] - 1])}</small>${levelBar(k)}</button>`).join('')}</div></div>`).join('')}
   </section>
   <button class="start" data-act="start">Start ${state.perSession} problems</button>
   <p class="meta">${todayCount ? `${todayCount} problems so far today. ` : ''}${state.total} problems solved since the start.</p>`;
@@ -1140,13 +1169,15 @@ function renderParent() {
   <section>
     <h2>Recent rounds</h2>
     ${state.sessions.length ? `<ul class="list">${state.sessions.slice(0, 8).map(s => `<li><span>${fmtDate(s.d)} · ${s.skills.map(k => SKILLS[k] ? SKILLS[k].name : k).join(', ')}</span><span>${s.score}/${s.n}</span></li>`).join('')}</ul>` : '<p class="note">No rounds yet.</p>'}
-    ${state.log.length ? `<p class="note">Level changes: ${state.log.slice(0, 5).map(l => `${SKILLS[l.k].name} ${l.dir === 'up' ? '↑' : '↓'} ${l.to} (${fmtDate(l.d)})`).join(' · ')}</p>` : ''}
+    ${state.log.length ? `<p class="note">Level changes: ${state.log.slice(0, 5).map(l => `${SKILLS[l.k].name} ${{ up: '↑', down: '↓', mastered: '✓', unlocked: 'unlocked' }[l.dir] || ''}${l.dir === 'up' || l.dir === 'down' ? ' ' + l.to : ''} (${fmtDate(l.d)})`).join(' · ')}</p>` : ''}
   </section>
   <section>
-    <h2>Array goal</h2>
+    <h2>Goal</h2>
+    <p class="note">Pick the goal topic on the home screen. It comes up more often in rounds until the goal is met.</p>
+    <div class="row-btns"><span>Goal size</span><div class="seg">${GOAL_SIZES.map(n => `<button data-act="goal-size" data-n="${n}" aria-pressed="${state.goal.target === n}">${n}</button>`).join('')}</div></div>
     <div class="row-btns">
-      <span>${state.arraysDone} of ${ARRAY_GOAL} done</span>
-      ${confirmReset ? `<button class="ghost danger" data-act="reset-yes">Yes, start a new 50</button><button class="link" data-act="reset-no">Cancel</button>` : `<button class="ghost" data-act="reset">Start a new 50</button>`}
+      <span>${SKILLS[goalSkill()].name}: ${goalDone()} of ${state.goal.target} done</span>
+      ${confirmReset ? `<button class="ghost danger" data-act="reset-yes">Yes, start a new ${state.goal.target}</button><button class="link" data-act="reset-no">Cancel</button>` : `<button class="ghost" data-act="reset">Start a new ${state.goal.target}</button>`}
     </div>
   </section>
   ${renderSync()}`;
@@ -1232,7 +1263,8 @@ app.addEventListener('click', e => {
   }
   else if (act === 'reset') { confirmReset = true; render(); }
   else if (act === 'reset-no') { confirmReset = false; render(); }
-  else if (act === 'reset-yes') { state.arraysDone = 0; confirmReset = false; save(); render(); }
+  else if (act === 'reset-yes') { state.goalBase[goalSkill()] = state.done[goalSkill()] || 0; confirmReset = false; save(); render(); }
+  else if (act === 'goal-size') { state.goal.target = +b.dataset.n; save(); render(); }
 });
 app.addEventListener('submit', e => {
   if (e.target.id !== 'name-form') return;
@@ -1241,6 +1273,7 @@ app.addEventListener('submit', e => {
   save(); render();
 });
 app.addEventListener('change', e => {
+  if (e.target.id === 'goal-skill') { state.goal.skill = e.target.value; state.on[e.target.value] = true; save(); render(); return; }
   if (e.target.id !== 'voice') return;
   try { if (e.target.value) localStorage.setItem(VOICE_KEY, e.target.value); else localStorage.removeItem(VOICE_KEY); } catch (err) {}
   render();

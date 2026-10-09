@@ -286,3 +286,14 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .name-form { display: flex; flex-direction: column; gap: 8px; }
 .name-form label { font-weight: 700; }
 .name-input { width: 12em; font-size: 1.1rem; }
+
+/* goal picker and topic level bars */
+.goal-pick { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.goal-pick label { font-size: 1.05rem; color: var(--chalk-dim); letter-spacing: .06em; text-transform: uppercase; font-weight: 700; }
+.goal-pick select { font-weight: 700; font-size: 1rem; }
+.goal-head { flex-wrap: wrap; }
+.lvlbar { display: flex; gap: 3px; margin-top: auto; padding-top: 8px; width: 100%; }
+.seg-bar { flex: 1; height: 7px; border-radius: 4px; background: rgba(238,236,227,.14); overflow: hidden; }
+.seg-bar i { display: block; height: 100%; background: var(--chalk-dim); border-radius: 4px; }
+.chip[aria-pressed="true"] .seg-bar i { background: var(--green); }
+.lvlbar.done .seg-bar i { background: var(--yellow) !important; }
