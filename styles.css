@@ -297,3 +297,6 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .seg-bar i { display: block; height: 100%; background: var(--chalk-dim); border-radius: 4px; }
 .chip[aria-pressed="true"] .seg-bar i { background: var(--green); }
 .lvlbar.done .seg-bar i { background: var(--yellow) !important; }
+.small-link { font-size: .82rem; padding: 2px 0; }
+.topic-reset { gap: 14px; }
+.topic-reset .link { font-size: .85rem; padding: 2px 0; }

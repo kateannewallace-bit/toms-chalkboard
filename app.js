@@ -816,7 +816,7 @@ function makeProblem(skill, level = state.levels[skill], seed = newSeed(), kind 
 }
 
 /* ---------- session ---------- */
-let screen = 'home', sess = null, lastChanges = [], confirmReset = false, confirmWipe = false, wiped = false;
+let screen = 'home', sess = null, lastChanges = [], confirmReset = false, confirmWipe = false, wiped = false, confirmTopic = null;
 /* Each round mixes four kinds of problems:
    - spaced review of missed concepts, due today (up to 30% of the round)
    - the current level (most problems)
@@ -1136,7 +1136,8 @@ function renderParent() {
   const slips = Object.entries(state.slips).filter(([k]) => !k.endsWith('|counting slip')).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const lv = ORDER.map(k => {
     const L = state.levels[k], max = SKILLS[k].levels.length, r = state.rec[k] || [];
-    return `<div class="lvl"><div><strong>${SKILLS[k].name}</strong><small>${state.mastered[k] ? '<b class="tag stretch">Mastered</b> ' : ''}${esc(SKILLS[k].levels[L - 1])}${r.length ? ` · ${r.filter(Boolean).length} of last ${r.length} right first try` : ''}</small></div>
+    return `<div class="lvl"><div><strong>${SKILLS[k].name}</strong><small>${state.mastered[k] ? '<b class="tag stretch">Mastered</b> ' : ''}${esc(SKILLS[k].levels[L - 1])}${r.length ? ` · ${r.filter(Boolean).length} of last ${r.length} right first try` : ''}</small>
+      ${confirmTopic === k ? `<span class="row-btns topic-reset"><button class="link danger-text" data-act="topic-reset-yes" data-k="${k}">Yes, reset ${SKILLS[k].name}</button><button class="link" data-act="topic-reset-no">Cancel</button></span>` : `<button class="link small-link" data-act="topic-reset" data-k="${k}">Reset</button>`}</div>
       <div class="stepper"><button data-act="lvl" data-k="${k}" data-d="-1" aria-label="Lower ${SKILLS[k].name} level" ${L <= 1 ? 'disabled' : ''}>−</button><span>${L}/${max}</span><button data-act="lvl" data-k="${k}" data-d="1" aria-label="Raise ${SKILLS[k].name} level" ${L >= max ? 'disabled' : ''}>+</button></div></div>`;
   }).join('');
   return `
@@ -1195,6 +1196,15 @@ function renderParent() {
   ${renderSync()}`;
 }
 
+// Clears one topic's progress; other topics and the round history stay as they are.
+function resetTopic(k) {
+  state.levels[k] = defaultState().levels[k];
+  delete state.rec[k]; delete state.stretch[k]; delete state.mastered[k];
+  state.done[k] = 0; state.goalBase[k] = 0;
+  state.cards = state.cards.filter(c => c.skill !== k);
+  for (const key of Object.keys(state.slips)) if (key.startsWith(k + '|')) delete state.slips[key];
+}
+
 function renderReview() {
   const cards = state.cards.slice().sort((a, b) => a.due - b.due);
   const when = d => { const days = Math.round((d - startOfDay()) / DAY); return days <= 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`; };
@@ -1251,7 +1261,7 @@ app.addEventListener('click', e => {
   else if (act === 'print') printRound();
   else if (act === 'next') next();
   else if (act === 'say') { const p = sess.probs[sess.i]; say(p.speak || spoken(p.q || '')); }
-  else if (act === 'home') { screen = 'home'; confirmReset = false; confirmWipe = false; wiped = false; render(); }
+  else if (act === 'home') { screen = 'home'; confirmReset = false; confirmWipe = false; wiped = false; confirmTopic = null; render(); }
   else if (act === 'parent') { screen = 'parent'; render(); }
   else if (act === 'chip') { state.on[b.dataset.k] = !state.on[b.dataset.k]; save(); render(); }
   else if (act === 'lvl') { const k = b.dataset.k; state.levels[k] = Math.max(1, Math.min(SKILLS[k].levels.length, state.levels[k] + +b.dataset.d)); state.rec[k] = []; save(); render(); }
@@ -1273,6 +1283,9 @@ app.addEventListener('click', e => {
       const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
     });
   }
+  else if (act === 'topic-reset') { confirmTopic = b.dataset.k; render(); }
+  else if (act === 'topic-reset-no') { confirmTopic = null; render(); }
+  else if (act === 'topic-reset-yes') { resetTopic(b.dataset.k); confirmTopic = null; save(); render(); }
   else if (act === 'wipe') { confirmWipe = true; wiped = false; render(); }
   else if (act === 'wipe-no') { confirmWipe = false; render(); }
   else if (act === 'wipe-yes') {
