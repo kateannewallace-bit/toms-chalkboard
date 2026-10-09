@@ -539,18 +539,20 @@ function tenFrames(a, b, mode) {
   return `<svg class="tf" viewBox="0 0 ${W} ${2 * c + 2}" width="${W}" role="img" aria-label="ten frames">${s}</svg>`;
 }
 
+// Coin photos (US Mint, public domain) at true relative sizes: real diameters in mm × 2.6
 const COINS = {
-  q: { v: 25, r: 27, name: 'quarter' },
-  n: { v: 5, r: 23, name: 'nickel' },
-  p: { v: 1, r: 21, name: 'penny', cls: 'copper' },
-  d: { v: 10, r: 19, name: 'dime' },
+  q: { v: 25, mm: 24.26, name: 'quarter', img: 'money/quarter.png' },
+  n: { v: 5, mm: 21.21, name: 'nickel', img: 'money/nickel.jpg' },
+  p: { v: 1, mm: 19.05, name: 'penny', img: 'money/penny.png' },
+  d: { v: 10, mm: 17.91, name: 'dime', img: 'money/dime.png' },
 };
+// The dollar bill shows at about a quarter of real size, well under the 75% US law allows for pictures of money.
 function coinRow(list) {
   const order = ['b', 'q', 'd', 'n', 'p'];
   const items = list.slice().sort((a, b) => order.indexOf(a) - order.indexOf(b)).map(k => {
-    if (k === 'b') return `<span class="coin-wrap"><svg viewBox="0 0 124 58" width="124" class="bill" aria-hidden="true"><rect x="1" y="1" width="122" height="56" rx="4"/><circle cx="62" cy="29" r="16"/><text x="62" y="35" text-anchor="middle">$1</text></svg><small>dollar</small></span>`;
-    const c = COINS[k], d = c.r * 2 + 4;
-    return `<span class="coin-wrap"><svg viewBox="0 0 ${d} ${d}" width="${d}" class="coin ${c.cls || 'silver'}" aria-hidden="true"><circle cx="${d / 2}" cy="${d / 2}" r="${c.r}"/><circle cx="${d / 2}" cy="${d / 2}" r="${c.r - 4}" class="rim"/><text x="${d / 2}" y="${d / 2 + 5}" text-anchor="middle">${c.v}¢</text></svg><small>${c.name}</small></span>`;
+    if (k === 'b') return `<span class="coin-wrap"><img src="money/dollar.jpg" width="150" height="64" class="bill-img" alt="one dollar bill"><b class="denom">$1</b><small>dollar</small></span>`;
+    const c = COINS[k], d = Math.round(c.mm * 2.6);
+    return `<span class="coin-wrap"><img src="${c.img}" width="${d}" height="${d}" class="coin-img" alt="${c.name}"><b class="denom">${c.v}¢</b><small>${c.name}</small></span>`;
   });
   return `<div class="coins" role="img" aria-label="coins">${items.join('')}</div>`;
 }

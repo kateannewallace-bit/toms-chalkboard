@@ -316,3 +316,9 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .sqref { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; max-width: 560px; font-variant-numeric: tabular-nums; color: var(--chalk); font-size: .95rem; }
 .sqref span { white-space: nowrap; }
 .cast-input { width: min(100%, 26em); }
+
+/* coin and bill photos */
+.coin-img { display: block; border-radius: 50%; clip-path: circle(48.5%); object-fit: cover; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+.bill-img { display: block; border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
+.denom { font-size: 1.35rem; color: var(--yellow); line-height: 1.1; margin-top: 4px; font-variant-numeric: tabular-nums; }
+@media print { .denom { color: #1d1d1d; } }
