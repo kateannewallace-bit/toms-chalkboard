@@ -914,6 +914,7 @@ function dueCards() {
   return state.cards.filter(c => c.due <= now && SKILLS[c.skill]).sort((a, b) => a.due - b.due);
 }
 function buildSession() {
+  storyMemory.clear();
   let on = ORDER.filter(k => state.on[k]);
   if (!on.length) on = ['times'];
   const n = state.perSession, plan = [];

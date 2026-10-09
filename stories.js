@@ -156,10 +156,40 @@ const SEASONS = {
   11: { name: 'Martinmas', things: 'paper lanterns', place: 'on the lantern walk', containers: 'strings', helper: 'Saint Martin', event: 'the lantern walk', lose: b => `The wind blew out ${b} of them.` },
   12: { name: 'Advent', things: 'straw stars', place: 'by the Advent spiral', containers: 'boxes', helper: 'Saint Nicholas', event: 'the Advent garden', lose: b => `The cat batted ${b} of them under the sofa!` },
 };
+// Hand-written seasonal stories. Months listed here use these most of the time,
+// with the simple pattern stories above as an occasional extra.
+const SEASON_STORIES = {
+  10: [
+    { kind: 'add', f: ({ a, b }) => `At midnight, ${a} skeletons climbed out of the old graveyard. Then ${b} more rattled out from under the crooked gate. How many skeletons are dancing in the moonlight?` },
+    { kind: 'add', f: ({ a, b }) => `The Headless Horseman galloped past ${a} dark houses in Sleepy Hollow, then ${b} more. How many houses did he thunder past?` },
+    { kind: 'add', f: ({ a, b }) => `${a} ghosts drifted out of the haunted mill, and ${b} more floated up from the bottom of the old well. How many ghosts are haunting tonight?` },
+    { kind: 'sub', f: ({ a, b }) => `A witch kept ${a} spiders in a jar. In the night, ${b} crept out through a crack in the lid! How many spiders are still in the jar?` },
+    { kind: 'sub', f: ({ a, b }) => `${a} candles flickered in the haunted house. An icy wind moaned through the halls, and ${b} went out. How many are still burning in the dark?` },
+    { kind: 'sub', f: ({ a, b }) => `Stingy Jack wandered the dark with a turnip lantern holding ${a} glowing coals. ${b} of them went cold. How many coals still glow?` },
+    { kind: 'more', f: ({ a, b }) => `There are ${a} bats in the bell tower and ${b} owls in the dead oak tree. How many more bats than owls?` },
+    { kind: 'more', f: ({ a, b }) => `The werewolf howled ${a} times at the full moon. Its pup howled ${b} times. How many more howls did the werewolf make?` },
+    { kind: 'need', f: ({ T, a }) => `The witch needs ${T} toadstools for her midnight brew. She has picked ${a}. How many more toadstools before the clock strikes twelve?` },
+    { kind: 'need', f: ({ T, a }) => `The mummy needs ${T} feet of bandages to wrap itself up again. It has found ${a} feet. How many more feet of bandages does it need?` },
+    { kind: 'groups', f: ({ a, b }) => `There are ${a} coffins in the vampire's cellar, with ${b} bats hanging upside down over each one. How many bats?` },
+    { kind: 'groups', f: ({ a, b }) => `${a} witches flew across the moon, each with ${b} black cats riding on her broom. How many cats?` },
+    { kind: 'groups', f: ({ a, b }) => `A spider spun ${a} webs in the haunted attic, with ${b} moths stuck in each web. How many moths?` },
+    { kind: 'share', f: ({ N, g }) => `A ghost stole ${N} silver spoons from the kitchen and hid them equally in ${g} dusty cupboards. How many spoons are in each cupboard?` },
+    { kind: 'share', f: ({ N, g }) => `${N} trick-or-treat candies were shared equally among ${g} little monsters. How many candies did each monster get?` },
+    { kind: 'groupsPlus', f: ({ a, b, c: x }) => `The graveyard has ${a} rows of tombstones with ${b} in each row, plus ${x} crooked ones by the gate. How many tombstones?` },
+    { kind: 'groupsPlus', f: ({ a, b, c: x }) => `The witch dropped ${b} frog legs into each of her ${a} cauldrons, then tossed in ${x} more for luck. How many frog legs went in?` },
+    { kind: 'addSub', f: ({ a, b, c: x }) => `${a} will-o'-the-wisps glowed over the swamp, then ${b} more flickered awake. ${x} drifted away into the fog. How many are still glowing?` },
+    { kind: 'addSub', f: ({ a, b, c: x }, c) => `The banshee wailed ${a} times on Monday night and ${b} times on Tuesday. ${c.me} hid under the covers for ${x} of the wails. How many wails did ${c.me} hear?` },
+  ],
+};
+
+const seasonCache = {};
 function seasonWorld(m) {
+  if (seasonCache[m]) return seasonCache[m];
   const v = SEASONS[m], t = v.things;
-  return {
+  return seasonCache[m] = {
     name: () => v.name,
+    season: true,
+    extra: SEASON_STORIES[m] || [],
     t: {
       add: ({ a, b }, c) => `${c.me} gathered ${a} ${t} ${v.place}. ${cap(v.helper)} brought ${b} more. How many ${t} are there now?`,
       sub: ({ a, b }, c) => `${c.me} had ${a} ${t}. ${v.lose(b)} How many ${t} are left?`,
@@ -179,6 +209,8 @@ const WORLD_BOOST = { 6: ['shakespeare'], 7: ['greek'], 8: ['greek'], 9: ['knigh
 
 // Dragons from real legends: Norse, English, Sussex and Welsh
 const DRAGONS = ['Fafnir', 'the Lambton Worm', 'the Knucker', 'Y Ddraig Goch'];
+// Story templates already used this round
+const storyMemory = new Set();
 function storyCast() {
   const list = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
   const friends = list(state.cast.friends), villains = list(state.cast.villains);
@@ -222,9 +254,25 @@ const STORY_KINDS = { 1: ['add', 'sub', 'more', 'need'], 2: ['add', 'sub', 'more
 
 function genWords(L) {
   const kind = pick(STORY_KINDS[L] || STORY_KINDS[4]);
-  const world = pickWorld(), n = storyNums(kind, L), cast = storyCast();
-  const extras = (world.extra || []).filter(x => x.kind === kind && storyCast.text.includes(x.needs));
-  const story = (extras.length && rng() < 0.6 ? pick(extras).f : world.t[kind])(n, cast);
+  const n = storyNums(kind, L), cast = storyCast();
+  // Character and seasonal stories mix with each world's main story. No story repeats within a round:
+  // if the pick was already used, try another world.
+  const unused = fs => fs.filter(f => !storyMemory.has(f));
+  let world, f;
+  for (let tries = 0; tries < 12; tries++) {
+    world = pickWorld();
+    const extras = (world.extra || []).filter(x => x.kind === kind && (!x.needs || storyCast.text.includes(x.needs))).map(x => x.f);
+    const pool = unused(extras);
+    f = extras.length && rng() < (world.season ? 0.9 : 0.6) ? pick(pool.length ? pool : extras) : world.t[kind];
+    if (storyMemory.has(f) && pool.length) f = pick(pool);
+    // the plain seasonal story (the month's one object, like jack-o'-lanterns) shows up at most once a round
+    const plainSeason = world.season && f === world.t[kind];
+    if (plainSeason && storyMemory.has(world)) { if (pool.length) f = pick(pool); else continue; }
+    if (!storyMemory.has(f)) break;
+  }
+  storyMemory.add(f);
+  if (world.season && f === world.t[kind]) storyMemory.add(world);
+  const story = f(n, cast);
   const { ans, d, explain } = storyAnswer(kind, n);
   return {
     skill: 'words', story, speak: story, ans, world: world.name(), explain,
