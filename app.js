@@ -83,7 +83,8 @@ async function keyFor(code) {
 async function rpc(fn, body) {
   const res = await fetch(`${CFG.supabaseUrl}/rest/v1/rpc/${fn}`, {
     method: 'POST',
-    headers: { apikey: CFG.supabaseKey, Authorization: `Bearer ${CFG.supabaseKey}`, 'Content-Type': 'application/json' },
+    // New-style publishable keys (sb_publishable_…) go only in the apikey header; legacy anon JWTs also go in Authorization.
+    headers: Object.assign({ apikey: CFG.supabaseKey, 'Content-Type': 'application/json' }, CFG.supabaseKey.startsWith('sb_') ? {} : { Authorization: `Bearer ${CFG.supabaseKey}` }),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`${fn} failed (${res.status})`);
