@@ -322,3 +322,4 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .bill-img { display: block; border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
 .denom { font-size: 1.35rem; color: var(--yellow); line-height: 1.1; margin-top: 4px; font-variant-numeric: tabular-nums; }
 @media print { .denom { color: #1d1d1d; } }
+.cheer { margin: 0; font-size: 1.15rem; color: var(--chalk); max-width: 34ch; }
