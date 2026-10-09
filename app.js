@@ -1189,14 +1189,16 @@ function roundNews() {
 
 function renderDone() {
   const score = sess.results.filter(Boolean).length, n = sess.results.length;
+  // Cheer by share right on the first try, so short rounds are judged fairly
+  const pct = n ? score / n : 0, tier = pct >= 0.9 ? 0 : pct >= 0.7 ? 1 : pct >= 0.4 ? 2 : 3;
   const head = tr()
-    ? (score >= n - 1 ? greet('Bully') + ' A splendid charge!' : score >= n * 0.7 ? greet('Dee-lighted') + ' Fine work!' : greet('A good, strenuous effort'))
-    : (score >= n - 1 ? greet('Wonderful work') : score >= n * 0.7 ? greet('Strong work') : greet('Good practice'));
+    ? [greet('Bully') + ' A splendid charge!', greet('Dee-lighted') + ' Fine work!', greet('A good, strenuous effort'), greet('Steady on') + " Every Rough Rider has hard days. Let's charge again!"][tier]
+    : [greet('Wonderful work'), greet('Strong work'), greet('Good practice'), greet('Keep going') + ' Tricky ones help you grow.'][tier];
   const ups = lastChanges.filter(c => c[1] === 'up');
   const ph = sess.photo;
   return `
   <div class="done-head">
-    ${ph ? `<figure class="tr-photo"><img src="${ph.src}" alt="${esc(ph.alt)}"><figcaption>Col. Roosevelt is dee-lighted!</figcaption></figure>` : ''}
+    ${ph ? `<figure class="tr-photo"><img src="${ph.src}" alt="${esc(ph.alt)}"><figcaption>${['Col. Roosevelt is dee-lighted!', 'Col. Roosevelt is dee-lighted!', 'Col. Roosevelt says: keep charging!', 'Col. Roosevelt believes in you!'][tier]}</figcaption></figure>` : ''}
     <div class="done-text">
       <h1>${head}</h1>
       <p class="meta">${score} of ${n} right on the first try.</p>
