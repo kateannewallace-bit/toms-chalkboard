@@ -9,7 +9,6 @@
   --blue: #9fcbe9;
   --green: #a9d9a1;
   --orange: #f5b47e;
-  --copper: #c98a5a;
   --wood: #8a6240;
   --wood-dark: #5e4129;
   --room: #1b2420;
@@ -172,14 +171,6 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .coins { display: flex; flex-wrap: wrap; gap: 10px 14px; justify-content: center; align-items: flex-end; max-width: 520px; }
 .coin-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .coin-wrap small { color: var(--chalk-dim); font-size: .75rem; }
-.coin circle { fill: #c9ced0; stroke: #8f979b; stroke-width: 2; }
-.coin .rim { fill: none; stroke: #9aa2a6; stroke-width: 1.2; stroke-dasharray: 2 2; }
-.coin.copper circle { fill: var(--copper); stroke: #8a5634; }
-.coin.copper .rim { stroke: #8a5634; }
-.coin text, .bill text { font: 700 14px var(--font); fill: #2b2b2b; }
-.bill rect { fill: #a9c79c; stroke: #5d7c50; stroke-width: 2; }
-.bill circle { fill: none; stroke: #5d7c50; stroke-width: 2; }
-.bill text { font-size: 16px; }
 .ck-face { fill: rgba(255,255,255,.04); stroke: var(--chalk); stroke-width: 4; }
 .ck-tick { stroke: var(--chalk); stroke-opacity: .5; stroke-width: 1.5; }
 .ck-tick.big { stroke-opacity: 1; stroke-width: 3; }
@@ -250,7 +241,7 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 /* paper practice */
 @media screen { #print { display: none; } }
 @media print {
-  :root { --board: #ffffff; --chalk: #1d1d1d; --chalk-dim: #5c5c5c; --yellow: #c99700; --blue: #2f6d9a; --green: #3c7a39; --orange: #c46a1e; --pink: #b8456a; --room: #ffffff; --copper: #b8743f; color-scheme: light; }
+  :root { --board: #ffffff; --chalk: #1d1d1d; --chalk-dim: #5c5c5c; --yellow: #c99700; --blue: #2f6d9a; --green: #3c7a39; --orange: #c46a1e; --pink: #b8456a; --room: #ffffff; color-scheme: light; }
   body { background: #fff; color: #1d1d1d; padding: 0; font-size: 15pt; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .wrap { display: none; }
