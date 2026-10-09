@@ -1031,7 +1031,7 @@ function next() {
   save();
   if (tr()) sess.photo = nextPhoto();
   screen = 'done'; render();
-  if (tr() && state.voice !== 'off') { const s = sess.results.filter(Boolean).length; say(`${document.querySelector('h1')?.textContent || ''} ${s} out of ${sess.results.length} on the first try.`, true); }
+  if (tr() && state.voice !== 'off') { const s = sess.results.filter(Boolean).length; say(`${document.querySelector('h1')?.textContent || ''} ${document.querySelector('.cheer')?.textContent || ''} ${s} out of ${sess.results.length} on the first try.`, true); }
 }
 // Up: 5 in a row, 7 of the last 8, or 3 stretch problems in a row, all right on the first try.
 // Down: 4 misses in the last 6. Finishing the top level masters the topic and turns on the next one.
@@ -1187,20 +1187,59 @@ function roundNews() {
   return lines.length ? `<section><h2>This round</h2><ul class="ups">${lines.join('')}</ul></section>` : '';
 }
 
+/* End-of-round cheers by how the round went (90% / 70% / 40% / under).
+   The Colonel's come from Theodore Roosevelt's life and his White House menagerie. */
+const TR_CHEERS = [
+  [['Bully', 'A splendid charge, like the Rough Riders up San Juan Hill!'],
+   ['Dee-lighted', 'My badger Josiah would dig a hole of joy!'],
+   ['Bully', "That's prize-winning work. I won the Nobel Peace Prize in 1906, you know!"],
+   ['Capital', 'I read a book a day, and you just read these problems like a champion!'],
+   ['Bully', 'My son Quentin once took Algonquin the pony up the White House elevator. This round deserves a parade like that!'],
+   ['Splendid', 'Sharp as a cowboy on my Dakota ranch!']],
+  [['Dee-lighted', 'Fine work! My macaw, Eli Yale, would squawk hooray!'],
+   ['Bully', 'My guinea pigs, Admiral Dewey and Fighting Bob Evans, are cheering!'],
+   ['Fine work', "Steady and strong, like digging the Panama Canal one shovel at a time."],
+   ['Hooray', 'Slippers, my cat with six toes on each paw, gives you a six-toed salute!'],
+   ['Well done', 'Like camping under the giant trees at Yosemite with John Muir: a grand adventure!']],
+  [['A good, strenuous effort', 'My children once sneaked Algonquin the pony into the White House elevator. With practice, surprising things are possible!'],
+   ['Keep at it', 'Mapping the River of Doubt in Brazil was hard, and we did it step by step.'],
+   ['Onward', 'Saving forests and parks took years of work. Good things take practice!'],
+   ['Good effort', 'Jonathan Edwards, my black bear, would growl: keep trying!']],
+  [['Steady on', "Every Rough Rider has hard days. Let's charge again!"],
+   ['Chin up', 'When I was a boy, asthma made it hard to breathe. I practiced every day and grew strong. So can you!'],
+   ['Courage', 'On the River of Doubt we lost our canoes in the rapids, but we kept going. Try again!'],
+   ['Steady on', 'Even Pete, my bull terrier, had bad days. He once chased an ambassador! Tomorrow is a fresh start.'],
+   ['Never mind', "My daughter Alice's snake, Emily Spinach, didn't learn to slither in a day. Keep practicing!"]],
+];
+const PLAIN_CHEERS = [
+  [['Wonderful work', ''], ['Brilliant', ''], ['Superb', '']],
+  [['Strong work', ''], ['Nice going', '']],
+  [['Good practice', ''], ['Good effort', 'Every round makes you stronger.']],
+  [['Keep going', 'Tricky ones help you grow.'], ['Good try', 'Hard problems are how we learn.']],
+];
+let lastCheer = '';
+function pickCheer(tier) {
+  const pool = (tr() ? TR_CHEERS : PLAIN_CHEERS)[tier];
+  let c;
+  do { c = pool[Math.floor(Math.random() * pool.length)]; } while (pool.length > 1 && c[1] + c[0] === lastCheer);
+  lastCheer = c[1] + c[0];
+  return { tier, head: c[0], line: c[1] };
+}
+
 function renderDone() {
   const score = sess.results.filter(Boolean).length, n = sess.results.length;
   // Cheer by share right on the first try, so short rounds are judged fairly
   const pct = n ? score / n : 0, tier = pct >= 0.9 ? 0 : pct >= 0.7 ? 1 : pct >= 0.4 ? 2 : 3;
-  const head = tr()
-    ? [greet('Bully') + ' A splendid charge!', greet('Dee-lighted') + ' Fine work!', greet('A good, strenuous effort'), greet('Steady on') + " Every Rough Rider has hard days. Let's charge again!"][tier]
-    : [greet('Wonderful work'), greet('Strong work'), greet('Good practice'), greet('Keep going') + ' Tricky ones help you grow.'][tier];
+  if (!sess.cheer || sess.cheer.tier !== tier) sess.cheer = pickCheer(tier);
+  const head = greet(sess.cheer.head), line = sess.cheer.line;
   const ups = lastChanges.filter(c => c[1] === 'up');
   const ph = sess.photo;
   return `
   <div class="done-head">
     ${ph ? `<figure class="tr-photo"><img src="${ph.src}" alt="${esc(ph.alt)}"><figcaption>${['Col. Roosevelt is dee-lighted!', 'Col. Roosevelt is dee-lighted!', 'Col. Roosevelt says: keep charging!', 'Col. Roosevelt believes in you!'][tier]}</figcaption></figure>` : ''}
     <div class="done-text">
-      <h1>${head}</h1>
+      <h1>${esc(head)}</h1>
+      ${line ? `<p class="cheer">${esc(line)}</p>` : ''}
       <p class="meta">${score} of ${n} right on the first try.</p>
       <div class="stars">${sess.results.map(starSvg).join('')}</div>
     </div>

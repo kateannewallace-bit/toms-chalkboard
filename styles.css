@@ -316,3 +316,4 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .sqref { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; max-width: 560px; font-variant-numeric: tabular-nums; color: var(--chalk); font-size: .95rem; }
 .sqref span { white-space: nowrap; }
 .cast-input { width: min(100%, 26em); }
+.cheer { margin: 0; font-size: 1.15rem; color: var(--chalk); max-width: 34ch; }
