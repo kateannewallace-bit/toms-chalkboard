@@ -283,3 +283,6 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .tag.stretch { color: var(--board); background: var(--yellow); }
 .big-news { color: var(--yellow); font-size: 1.15rem; }
 .var { font-style: italic; color: var(--yellow); font-family: Georgia, "Times New Roman", serif; }
+.name-form { display: flex; flex-direction: column; gap: 8px; }
+.name-form label { font-weight: 700; }
+.name-input { width: 12em; font-size: 1.1rem; }

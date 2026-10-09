@@ -1,6 +1,6 @@
 # Tom's Chalkboard
 
-Short math rounds for a curious 6-year-old, drawn on a Waldorf-style chalkboard.
+Short math rounds for curious kids, drawn on a Waldorf-style chalkboard. Built for Tom; the child's name is set on the grown-ups page, so friends can use it too.
 
 - **2nd grade topics** follow Khan Academy's 2nd grade units: adding and taking away, place value (with readable place-value blocks), counting patterns, arrays, money, time, measuring, graphs, shapes and story problems.
 - **Beyond 2nd grade:** times tables, mystery numbers (early algebra), squares and square roots, numbers below zero, and big numbers.

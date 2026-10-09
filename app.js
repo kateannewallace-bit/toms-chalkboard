@@ -8,6 +8,10 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const isSq = n => Number.isInteger(Math.sqrt(n));
 const BOX = '<span class="box" aria-label="mystery number"></span>';
+// The child's name, set on the grown-ups page. Stories fall back to "Pip" until a name is set.
+const childName = () => (state.childName || '').trim();
+const N = () => childName() || 'Pip';
+const greet = s => childName() ? `${s}, ${childName()}!` : `${s}!`;
 
 const SKILLS = {
   add:      { name: 'Adding',          levels: ['Sums to 10', 'Make a ten (8 + 7)', 'Two-digit + one-digit, carrying', 'Two-digit + two-digit, carrying', 'Three-digit + two-digit', 'Three-digit + three-digit', 'Four-digit adding'] },
@@ -354,14 +358,14 @@ function genSquares(L) {
 }
 const STORIES = {
   1: [
-    () => { const a = rand(3, 9), b = rand(2, 9); return { story: `Tom found ${a} acorns under the oak tree. Then he found ${b} more. How many acorns does he have now?`, ans: a + b, distract: [[Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
+    () => { const a = rand(3, 9), b = rand(2, 9); return { story: `${N()} found ${a} acorns under the oak tree, then ${b} more. How many acorns is that now?`, ans: a + b, distract: [[Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
     () => { const a = rand(8, 18), b = rand(2, a - 2); return { story: `There were ${a} candles on the table. ${b} blew out in the wind. How many candles are still burning?`, ans: a - b, distract: [[a + b, 'added instead of taking away']], explain: `${a} − ${b} = ${a - b}` }; },
-    () => { const a = rand(4, 9), b = rand(3, 9); return { story: `A gnome had ${a} red stones and ${b} blue stones in his pocket. How many stones in all?`, ans: a + b, distract: [[Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
+    () => { const a = rand(4, 9), b = rand(3, 9); return { story: `A gnome had ${a} red stones and ${b} blue stones in a little pouch. How many stones in all?`, ans: a + b, distract: [[Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
   ],
   2: [
     () => { const a = rand(14, 39), b = rand(12, 39); return { story: `The hens laid ${a} eggs on Monday and ${b} eggs on Tuesday. How many eggs is that altogether?`, ans: a + b, distract: [[a + b - 10, 'forgot to carry'], [Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
     () => { const a = rand(30, 60), b = rand(11, a - 12); return { story: `There were ${a} acorns in the basket. A squirrel ran off with ${b}. How many acorns are left?`, ans: a - b, distract: [[a + b, 'added instead of taking away']], explain: `${a} − ${b} = ${a - b}` }; },
-    () => { const a = rand(21, 48), b = rand(15, 45); return { story: `Tom walked ${a} steps to the garden gate, then ${b} more steps to the apple tree. How many steps did he walk?`, ans: a + b, distract: [[a + b - 10, 'forgot to carry'], [Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
+    () => { const a = rand(21, 48), b = rand(15, 45); return { story: `${N()} walked ${a} steps to the garden gate, then ${b} more steps to the apple tree. How many steps is that?`, ans: a + b, distract: [[a + b - 10, 'forgot to carry'], [Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
   ],
   3: [
     () => { const a = rand(3, 6), b = rand(3, 9); return { story: `There are ${a} baskets. Each basket holds ${b} pears. How many pears are there?`, ans: a * b, distract: [[a + b, 'added instead of multiplied'], [a * (b + 1), 'next fact over']], explain: `${a} × ${b} = ${a * b}` }; },
@@ -370,7 +374,7 @@ const STORIES = {
     () => { const a = rand(3, 7); return { story: `${a} children hold up both hands. How many fingers is that? Each hand has 5 fingers.`, ans: a * 10, distract: [[a * 5, 'counted one hand each'], [a + 10, 'added instead of multiplied']], explain: `${a} children × 2 hands = ${a * 2} hands, and ${a * 2} × 5 = ${a * 10}` }; },
   ],
   4: [
-    () => { const a = rand(2, 5), b = rand(3, 6), c = rand(2, 9); return { story: `Tom has ${a} bags with ${b} marbles in each bag. Then he finds ${c} more marbles. How many marbles does he have now?`, ans: a * b + c, distract: [[a * b, 'stopped after one step'], [a + b + c, 'added everything']], explain: `${a} × ${b} = ${a * b}, then ${a * b} + ${c} = ${a * b + c}` }; },
+    () => { const a = rand(2, 5), b = rand(3, 6), c = rand(2, 9); return { story: `${N()} has ${a} bags with ${b} marbles in each bag, then finds ${c} more marbles. How many marbles now?`, ans: a * b + c, distract: [[a * b, 'stopped after one step'], [a + b + c, 'added everything']], explain: `${a} × ${b} = ${a * b}, then ${a * b} + ${c} = ${a * b + c}` }; },
     () => { const g = rand(2, 5), e = rand(2, 6), N = g * e; return { story: `${N} strawberries are shared equally among ${g} gnomes. How many strawberries does each gnome get?`, ans: e, distract: [[N - g, 'took away instead of sharing'], [g, 'picked the number of gnomes']], explain: `${g} × ${e} = ${N}, so each gnome gets ${e}.` }; },
     () => { const t = rand(3, 5), c = rand(4, 8), gone = rand(2, c); return { story: `There are ${t} tables with ${c} candles on each. ${gone} candles go out. How many are still burning?`, ans: t * c - gone, distract: [[t * c, 'stopped after one step'], [t * c + gone, 'added instead of taking away']], explain: `${t} × ${c} = ${t * c}, then ${t * c} − ${gone} = ${t * c - gone}` }; },
   ],
@@ -601,8 +605,8 @@ function genMoney(L) {
   }
   const stories = [
     () => { const a = rand(2, 7) * 5, b = rand(2, 9) * 5; return { story: `A pencil costs ${a}¢ and an eraser costs ${b}¢. How much for both?`, ans: a + b, distract: [[Math.abs(a - b), 'took away instead of adding']], explain: `${a}¢ + ${b}¢ = ${cents(a + b)}` }; },
-    () => { const d = rand(3, 7), cost = rand(2, d * 2 - 1) * 5; return { story: `Tom has ${d} dimes. He buys an apple for ${cost}¢. How much money does he have left?`, ans: d * 10 - cost, distract: [[d * 10 + cost, 'added instead of taking away'], [d - cost / 5, 'counted coins, not cents']], explain: `${d} dimes is ${d * 10}¢. ${d * 10}¢ − ${cost}¢ = ${d * 10 - cost}¢` }; },
-    () => { const q = rand(1, 3), n = rand(1, 4); return { story: `Grandma gives Tom ${q} quarter${q > 1 ? 's' : ''} and ${n} nickel${n > 1 ? 's' : ''}. How much money is that?`, ans: q * 25 + n * 5, distract: [[q + n, 'counted coins, not cents'], [q * 25 + n, 'counted nickels as pennies']], explain: `${q} × 25¢ = ${q * 25}¢, ${n} × 5¢ = ${n * 5}¢. Together ${cents(q * 25 + n * 5)}` }; },
+    () => { const d = rand(3, 7), cost = rand(2, d * 2 - 1) * 5; return { story: `${N()} has ${d} dimes and buys an apple for ${cost}¢. How much money is left?`, ans: d * 10 - cost, distract: [[d * 10 + cost, 'added instead of taking away'], [d - cost / 5, 'counted coins, not cents']], explain: `${d} dimes is ${d * 10}¢. ${d * 10}¢ − ${cost}¢ = ${d * 10 - cost}¢` }; },
+    () => { const q = rand(1, 3), n = rand(1, 4); return { story: `Grandma gives ${N()} ${q} quarter${q > 1 ? 's' : ''} and ${n} nickel${n > 1 ? 's' : ''}. How much money is that?`, ans: q * 25 + n * 5, distract: [[q + n, 'counted coins, not cents'], [q * 25 + n, 'counted nickels as pennies']], explain: `${q} × 25¢ = ${q * 25}¢, ${n} × 5¢ = ${n * 5}¢. Together ${cents(q * 25 + n * 5)}` }; },
   ];
   const p = pick(stories)();
   p.distract.push([p.ans + 5, 'counting slip'], [p.ans - 5, 'counting slip'], [p.ans + 10, 'counting slip']);
@@ -634,8 +638,8 @@ function genMeasure(L) {
     return { skill: 'measure', visual: rulerSvg(max, [{ start: 0, len: a, cls: 'pencil' }, { start: 0, len: b, cls: 'crayon' }]), ask: 'How much longer is the pencil than the crayon?', speak: `The pencil is on top. The crayon is below it. How much longer is the pencil than the crayon?`, ans: a - b, fmt, distract: [[a, "gave the pencil's length"], [a + b, 'added the lengths'], [b, "gave the crayon's length"]], explain: `${a} − ${b} = ${a - b}` };
   }
   const st = [
-    () => { const a = rand(25, 60), b = rand(11, a - 8); return { story: `Tom's paper boat floated ${a} feet down the stream. His friend's boat floated ${b} feet. How much farther did Tom's boat float?`, ans: a - b, unit: 'feet', distract: [[a + b, 'added instead of taking away']] }; },
-    () => { const a = rand(12, 45), b = rand(12, 45); return { story: `A gnome walked ${a} meters to the mushroom ring, then ${b} meters to the stream. How far did he walk?`, ans: a + b, unit: 'meters', distract: [[Math.abs(a - b), 'took away instead of adding']] }; },
+    () => { const a = rand(25, 60), b = rand(11, a - 8); return { story: `${N()}'s paper boat floated ${a} feet down the stream. A friend's boat floated ${b} feet. How much farther did ${N()}'s boat float?`, ans: a - b, unit: 'feet', distract: [[a + b, 'added instead of taking away']] }; },
+    () => { const a = rand(12, 45), b = rand(12, 45); return { story: `A gnome walked ${a} meters to the mushroom ring, then ${b} meters to the stream. How far did the gnome walk?`, ans: a + b, unit: 'meters', distract: [[Math.abs(a - b), 'took away instead of adding']] }; },
     () => { const a = rand(40, 90), b = rand(12, a - 15); return { story: `The ribbon was ${a} centimeters long. Mama cut off ${b} centimeters for a bookmark. How long is the ribbon now?`, ans: a - b, unit: 'cm', distract: [[a + b, 'added instead of taking away']] }; },
   ];
   const p = pick(st)();
@@ -752,19 +756,19 @@ function genOddSquares() {
     explain: `${odds.join(' + ')} = ${sq}, which is ${n} × ${n}. Adding odd numbers in order always builds a square!` };
 }
 
-/* ---------- off the screen: hands-on ideas matched to what he practiced ---------- */
+/* ---------- off the screen: hands-on ideas matched to what was practiced ---------- */
 const HANDS = {
   add: 'Make two piles of acorns or chestnuts. Push them together, and every time you make ten, wrap them in a little cloth bundle.',
   sub: 'Line up 15 beeswax blocks and take some away for a gnome to "borrow." How many are left on the table?',
-  place: 'Bundle sticks or straws into tens with yarn. Ten bundles tied together make a hundred. Build his age, then the year.',
+  place: 'Bundle sticks or straws into tens with yarn. Ten bundles tied together make a hundred. Build your child’s age, then the year.',
   patterns: 'Hop along stepping stones counting by 5s, then by 10s. Pair up socks from the laundry: even or odd?',
   arrays: 'Lay out acorns or stones in rows on a wool cloth: 3 rows of 4, then 4 rows of 3. Same number?',
-  money: 'Play shop with real coins. Price a few things at the nature table and let him pay and make change.',
+  money: 'Play shop with real coins. Price a few things at the nature table and let your child pay and make change.',
   time: 'Make a clock from a paper plate with a short and a long hand. Set it to bedtime, lunch and the walk to school.',
-  measure: 'Measure his foot, a leaf and a stick with a ruler or a string. Which is longest? By how much?',
+  measure: 'Measure a foot, a leaf and a stick with a ruler or a string. Which is longest? By how much?',
   graphs: 'Count the birds or the colors of leaves on a walk. Make a picture graph together with crayons back home.',
   shapes: 'Fold paper or cut an apple into halves and fourths. Are the parts really equal?',
-  words: 'Tell him a story problem out loud about his day, and let him make one up for you to solve.',
+  words: 'Tell a story problem out loud about the day, then trade: your child makes one up for you to solve.',
   times: 'Count out loud while marching or jumping rope: the 3s on every third step, the 4s on every fourth.',
   missing: 'Hide some stones under a bowl: "There are 9 in all and I can see 5. How many are hiding?"',
   squares: 'Build squares from beeswax blocks: 1, then 4, then 9. Add one L-shaped layer of a new color each time.',
@@ -805,10 +809,10 @@ function makeProblem(skill, level = state.levels[skill], seed = newSeed(), kind 
 /* ---------- session ---------- */
 let screen = 'home', sess = null, lastChanges = [], confirmReset = false;
 /* Each round mixes four kinds of problems:
-   - spaced review of concepts he missed, due today (up to 30% of the round)
-   - his current level (most problems)
+   - spaced review of missed concepts, due today (up to 30% of the round)
+   - the current level (most problems)
    - an easier level now and then (about 1 in 7), to keep old skills fresh
-   - a stretch problem from the next level (about 1 in 9) once he is doing well */
+   - a stretch problem from the next level (about 1 in 9) once the child is doing well */
 const REVIEW_DAYS = [1, 3, 7, 14, 30];
 const DAY = 864e5;
 const startOfDay = () => new Date().setHours(0, 0, 0, 0);
@@ -977,6 +981,13 @@ function starSvg(on) {
 }
 function fmtDate(iso) { try { return new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); } catch (e) { return ''; } }
 
+function nameForm(label, button) {
+  return `<form class="name-form" id="name-form">
+    <label for="child-name">${label}</label>
+    <div class="row-btns"><input id="child-name" class="pick name-input" maxlength="24" placeholder="First name" autocomplete="off" value="${esc(childName())}"><button class="ghost" type="submit">${button}</button></div>
+  </form>`;
+}
+
 function renderHome() {
   const done = Math.min(state.arraysDone, ARRAY_GOAL);
   let tally = '';
@@ -984,7 +995,8 @@ function renderHome() {
   const today = new Date().toDateString();
   const todayCount = state.sessions.filter(s => new Date(s.d).toDateString() === today).reduce((t, s) => t + s.n, 0);
   return `
-  <header class="top"><h1>Hello, Tom!</h1><button class="link" data-act="parent">For grown-ups</button></header>
+  <header class="top"><h1>${esc(greet('Hello'))}</h1><button class="link" data-act="parent">For grown-ups</button></header>
+  ${childName() ? '' : nameForm("Who's practicing?", 'Start')}
   <section>
     <div class="goal-head"><h2>Array goal</h2><span class="count">${state.arraysDone} / ${ARRAY_GOAL}</span></div>
     <div class="tally" role="img" aria-label="${state.arraysDone} of ${ARRAY_GOAL} array problems done">${tally}</div>
@@ -1047,7 +1059,7 @@ function printRound() {
       ${writeIn(p) ? `<div class="pp-write"><span class="pp-box"></span>${esc(unitOf(p))}</div>` : `<div class="pp-circle">Circle one: ${p.choices.map(c => `<span>${esc(p.fmt ? p.fmt(c.v) : c.v)}</span>`).join('')}</div>`}
     </li>`;
   document.getElementById('print').innerHTML = `
-    <header class="pp-head"><h1>Tom's paper round</h1><span>${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span></header>
+    <header class="pp-head"><h1>${childName() ? esc(childName()) + "'s paper round" : 'Paper round'}</h1><span>${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span></header>
     <ol class="pp-list">${probs.map(item).join('')}</ol>
     <section class="pp-key"><h2>Answer key</h2><ol>${probs.map(p => `<li><strong>${esc(p.fmt ? p.fmt(p.ans) : p.ans)}</strong> <span>${esc(p.explain || '')}</span></li>`).join('')}</ol></section>`;
   window.print();
@@ -1068,8 +1080,8 @@ function roundNews() {
 function renderDone() {
   const score = sess.results.filter(Boolean).length, n = sess.results.length;
   const head = tr()
-    ? (score >= n - 1 ? 'Bully, Tom! A splendid charge!' : score >= n * 0.7 ? 'Dee-lighted, Tom! Fine work!' : 'A good, strenuous effort, Tom!')
-    : (score >= n - 1 ? 'Wonderful work, Tom!' : score >= n * 0.7 ? 'Strong work, Tom!' : 'Good practice, Tom!');
+    ? (score >= n - 1 ? greet('Bully') + ' A splendid charge!' : score >= n * 0.7 ? greet('Dee-lighted') + ' Fine work!' : greet('A good, strenuous effort'))
+    : (score >= n - 1 ? greet('Wonderful work') : score >= n * 0.7 ? greet('Strong work') : greet('Good practice'));
   const ups = lastChanges.filter(c => c[1] === 'up');
   const ph = sess.photo;
   return `
@@ -1095,7 +1107,7 @@ function renderParent() {
       <div class="stepper"><button data-act="lvl" data-k="${k}" data-d="-1" aria-label="Lower ${SKILLS[k].name} level" ${L <= 1 ? 'disabled' : ''}>−</button><span>${L}/${max}</span><button data-act="lvl" data-k="${k}" data-d="1" aria-label="Raise ${SKILLS[k].name} level" ${L >= max ? 'disabled' : ''}>+</button></div></div>`;
   }).join('');
   return `
-  <header class="top"><h1>For grown-ups</h1><button class="ghost" data-act="home">Back to Tom</button></header>
+  <header class="top"><h1>For grown-ups</h1><button class="ghost" data-act="home">${childName() ? `Back to ${esc(childName())}` : 'Back'}</button></header>
   <section>
     <h2>Levels</h2>
     <p class="note">A topic moves up after 5 in a row, 7 of the last 8, or 3 ★ stretch problems in a row, all right on the first try. It moves back down after 4 misses in 6. Finishing the top level masters a topic and turns on the next one. You can nudge levels yourself here.</p>
@@ -1103,8 +1115,9 @@ function renderParent() {
   </section>
   <section>
     <h2>Settings</h2>
+    ${nameForm("Child's name", 'Save')}
     <div class="row-btns"><span>Answers</span><div class="seg"><button data-act="mode" data-v="choose" aria-pressed="${state.answerMode !== 'type'}">Pick from four</button><button data-act="mode" data-v="type" aria-pressed="${state.answerMode === 'type'}">Type the number</button></div></div>
-    <p class="note">Typing tests real recall and gives him practice with his numerals. Problems whose answer is a word, a time or a sign still show choices.</p>
+    <p class="note">Typing tests real recall and gives practice writing numerals. Problems whose answer is a word, a time or a sign still show choices.</p>
     <div class="row-btns"><span>Problems per round</span><div class="seg">${[5, 10, 15].map(n => `<button data-act="per" data-n="${n}" aria-pressed="${state.perSession === n}">${n}</button>`).join('')}</div></div>
     <div class="row-btns"><span>End-of-round cheer</span><div class="seg"><button data-act="narr" data-v="tr" aria-pressed="${tr()}">Colonel Roosevelt</button><button data-act="narr" data-v="plain" aria-pressed="${!tr()}">Plain</button></div></div>
     ${canSpeak ? `<div class="row-btns"><label for="voice">Voice</label>
@@ -1116,7 +1129,7 @@ function renderParent() {
   ${renderReview()}
   <section>
     <h2>Paper practice</h2>
-    <p class="note">Print ${state.perSession} problems from the topics turned on at home, with boxes for him to write his answers and an answer key on the last page.</p>
+    <p class="note">Print ${state.perSession} problems from the topics turned on at home, with boxes for writing the answers and an answer key on the last page.</p>
     <div class="row-btns"><button class="ghost" data-act="print">Print a paper round</button></div>
   </section>
   <section>
@@ -1143,7 +1156,7 @@ function renderReview() {
   const when = d => { const days = Math.round((d - startOfDay()) / DAY); return days <= 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`; };
   return `<section>
     <h2>Coming back for review</h2>
-    <p class="note">Anything Tom misses comes back tomorrow, then after 3, 7, 14 and 30 days while he keeps getting it right. The first time it's the same problem, after that new numbers. ${state.cleared ? `${state.cleared} learned for good so far.` : ''}</p>
+    <p class="note">Anything missed comes back tomorrow, then after 3, 7, 14 and 30 days while it keeps getting answered right. The first time it's the same problem, after that new numbers. ${state.cleared ? `${state.cleared} learned for good so far.` : ''}</p>
     ${cards.length ? `<ul class="list">${cards.slice(0, 12).map(c => `<li><span>${SKILLS[c.skill] ? SKILLS[c.skill].name : c.skill} · ${esc(SKILLS[c.skill]?.levels[c.level - 1] || '')}</span><span>${when(c.due)} · step ${c.box + 1} of ${REVIEW_DAYS.length}</span></li>`).join('')}</ul>${cards.length > 12 ? `<p class="note">and ${cards.length - 12} more</p>` : ''}` : '<p class="note">Nothing to review yet.</p>'}
   </section>`;
 }
@@ -1170,7 +1183,7 @@ function renderSync() {
   return `
   <section>
     <h2>Sync between devices</h2>
-    <p class="note">Type this code into the grown-ups page on another device to share Tom's progress. Keep it private.</p>
+    <p class="note">Type this code into the grown-ups page on another device to share progress. Keep it private.</p>
     <div class="row-btns"><strong class="sync-code" id="sync-code">${esc(sync.code)}</strong><button class="ghost" data-act="sync-copy">Copy</button></div>
     <p class="note">${status}</p>
     <div class="row-btns"><button class="ghost" data-act="sync-now">Sync now</button><button class="link" data-act="sync-off">Stop syncing on this device</button></div>
@@ -1199,7 +1212,7 @@ app.addEventListener('click', e => {
   else if (act === 'chip') { state.on[b.dataset.k] = !state.on[b.dataset.k]; save(); render(); }
   else if (act === 'lvl') { const k = b.dataset.k; state.levels[k] = Math.max(1, Math.min(SKILLS[k].levels.length, state.levels[k] + +b.dataset.d)); state.rec[k] = []; save(); render(); }
   else if (act === 'per') { state.perSession = +b.dataset.n; save(); render(); }
-  else if (act === 'narr') { state.narrator = b.dataset.v; save(); render(); say(tr() ? 'Bully! Colonel Roosevelt, reporting for arithmetic duty!' : 'Hello, Tom. Ready for some math?', true); }
+  else if (act === 'narr') { state.narrator = b.dataset.v; save(); render(); say(tr() ? 'Bully! Colonel Roosevelt, reporting for arithmetic duty!' : `${greet('Hello')} Ready for some math?`, true); }
   else if (act === 'try-voice') say('Seven times eight is fifty-six.');
   else if (act === 'read') { state.readAloud = b.dataset.v === '1'; save(); render(); }
   else if (act === 'sync-new') { startSync(newCode()); render(); }
@@ -1219,6 +1232,12 @@ app.addEventListener('click', e => {
   else if (act === 'reset') { confirmReset = true; render(); }
   else if (act === 'reset-no') { confirmReset = false; render(); }
   else if (act === 'reset-yes') { state.arraysDone = 0; confirmReset = false; save(); render(); }
+});
+app.addEventListener('submit', e => {
+  if (e.target.id !== 'name-form') return;
+  e.preventDefault();
+  state.childName = (document.getElementById('child-name')?.value || '').trim().slice(0, 24);
+  save(); render();
 });
 app.addEventListener('change', e => {
   if (e.target.id !== 'voice') return;
