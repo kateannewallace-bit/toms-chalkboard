@@ -25,14 +25,14 @@ const WORLDS = {
   knights: {
     name: () => 'Knights & dragons',
     t: {
-      add: ({ a, b }) => `The dragon Emberclaw keeps ${a} golden eggs in one cave and ${b} in another. How many golden eggs does the dragon guard?`,
-      sub: ({ a, b }, c) => `${c.K} found ${a} gems in the dragon's hoard. The dragon woke with a ROAR, and ${b} gems tumbled down a crack in the rock! How many gems are left?`,
+      add: ({ a, b }, c) => `${cap(c.D)} keeps ${a} golden eggs in one cave and ${b} in another. How many golden eggs does ${c.D} guard?`,
+      sub: ({ a, b }, c) => `${c.K} found ${a} gems in the hoard of ${c.D}. The dragon woke with a ROAR, and ${b} gems tumbled down a crack in the rock! How many gems are left?`,
       more: ({ a, b }) => `There are ${a} knights at the round table and ${b} squires by the fire. How many more knights than squires?`,
-      need: ({ T, a }) => `The castle wall needs ${T} stones before the dragon comes back. The builders have set ${a}. How many more stones do they need?`,
-      groups: ({ a, b }) => `${a} knights ride toward the dragon's mountain. Each knight carries ${b} apples for the long road. How many apples is that?`,
-      share: ({ N, g }) => `The dragon gave back ${N} stolen shields. The knights shared them equally among ${g} castles. How many shields does each castle get?`,
+      need: ({ T, a }, c) => `The castle wall needs ${T} stones before ${c.D} comes back. The builders have set ${a}. How many more stones do they need?`,
+      groups: ({ a, b }, c) => `${a} knights ride out to face ${c.D}. Each knight carries ${b} apples for the long road. How many apples is that?`,
+      share: ({ N, g }, c) => `${cap(c.D)} gave back ${N} stolen shields. The knights shared them equally among ${g} castles. How many shields does each castle get?`,
       groupsPlus: ({ a, b, c: x }) => `The king's archers stand in ${a} rows of ${b}. Then ${x} more archers gallop in. How many archers are ready?`,
-      addSub: ({ a, b, c: x }, c) => `The dragon breathed ${a} puffs of fire on Monday and ${b} on Tuesday. ${c.K} blocked ${x} of them with a shield. How many puffs of fire got past?`,
+      addSub: ({ a, b, c: x }, c) => `${cap(c.D)} breathed ${a} puffs of fire on Monday and ${b} on Tuesday. ${c.K} blocked ${x} of them with a shield. How many puffs of fire got past?`,
     },
   },
   pixies: {
@@ -151,10 +151,12 @@ const currentSeason = () => SEASONS[new Date().getMonth() + 1];
 // Worlds that come up more often in their season
 const WORLD_BOOST = { 6: ['shakespeare'], 7: ['greek'], 8: ['greek'], 9: ['knights'], 10: ['tailypo', 'shakespeare', 'hunter'], 11: ['tailypo'] };
 
+// Dragons from real legends: Norse, English, Sussex and Welsh
+const DRAGONS = ['Fafnir', 'the Lambton Worm', 'the Knucker', 'Y Ddraig Goch'];
 function storyCast() {
   const list = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
   const friends = list(state.cast.friends), villains = list(state.cast.villains);
-  return { me: N(), H: `${N()} the Hunter`, K: `${N()} the knight`, F: pick(friends.length ? friends : ['Fu Dog']), V: pick(villains.length ? villains : ['the Death Raccoon']) };
+  return { me: N(), H: `${N()} the Hunter`, K: `${N()} the knight`, D: pick(DRAGONS), F: pick(friends.length ? friends : ['Fu Dog']), V: pick(villains.length ? villains : ['the Death Raccoon']) };
 }
 function pickWorld() {
   const m = new Date().getMonth() + 1;
