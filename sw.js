@@ -1,7 +1,7 @@
 // Offline support. Bump VERSION whenever app files change so devices pick up the update.
-const VERSION = 'chalkboard-v9';
+const VERSION = 'chalkboard-v10';
 const SHELL = [
-  './', 'index.html', 'styles.css', 'app.js', 'config.js', 'manifest.webmanifest',
+  './', 'index.html', 'styles.css', 'stories.js', 'app.js', 'config.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'tr/laugh.jpg', 'tr/laugh-closeup.jpg', 'tr/grin.jpg', 'tr/laughing-together.jpg', 'tr/automobile.jpg',
 ];

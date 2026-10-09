@@ -48,6 +48,8 @@ function defaultState() {
     on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, squares: false, negatives: false, bignums: false },
     rec: {}, slips: {}, sessions: [], log: [],
     cards: [], stretch: {}, mastered: {}, cleared: 0,
+    worlds: { hunter: true, knights: true, pixies: true, tailypo: true, greek: true, egypt: true, shakespeare: true, nature: true }, seasonal: true,
+    cast: { friends: 'Fu Dog, Cool Dracula', villains: 'the Death Raccoon' },
     done: {}, goal: { skill: 'arrays', target: 50 }, goalBase: {}, total: 0, perSession: 10, voice: 'stories', answerMode: 'choose', narrator: 'tr', updatedAt: 0,
   };
 }
@@ -57,6 +59,8 @@ function normalize(s) {
   s = Object.assign(d, raw);
   s.levels = Object.assign(defaultState().levels, s.levels);
   s.on = Object.assign(defaultState().on, s.on);
+  s.worlds = Object.assign(defaultState().worlds, s.worlds);
+  s.cast = Object.assign(defaultState().cast, s.cast);
   // squares used to have 5 levels; map them onto the new 12-level path
   if (oldSquares) {
     const map = { 1: 2, 2: 3, 3: 4, 4: 6, 5: 5 };
@@ -459,34 +463,6 @@ function rootSolve() {
     speak: `Root detective! What is the square root of ${sq}? Find the tens, check the last digit, then try it.`, ans: n, distract: d,
     explain: `1) Between ${t} and ${t + 10}. 2) It ends in ${last}, so the root ends in ${ENDINGS[last]}${twin ? `: ${lo} or ${hi}` : ''}. 3) ${twin ? `${mid} × ${mid} = ${mid * mid}, and ${sq} is ${sq < mid * mid ? 'less' : 'more'}, so it's ${n}. ` : ''}${n} × ${n} = ${sq} ✓`,
   };
-}
-const STORIES = {
-  1: [
-    () => { const a = rand(3, 9), b = rand(2, 9); return { story: `${N()} found ${a} acorns under the oak tree, then ${b} more. How many acorns is that now?`, ans: a + b, distract: [[Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
-    () => { const a = rand(8, 18), b = rand(2, a - 2); return { story: `There were ${a} candles on the table. ${b} blew out in the wind. How many candles are still burning?`, ans: a - b, distract: [[a + b, 'added instead of taking away']], explain: `${a} − ${b} = ${a - b}` }; },
-    () => { const a = rand(4, 9), b = rand(3, 9); return { story: `A gnome had ${a} red stones and ${b} blue stones in a little pouch. How many stones in all?`, ans: a + b, distract: [[Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
-  ],
-  2: [
-    () => { const a = rand(14, 39), b = rand(12, 39); return { story: `The hens laid ${a} eggs on Monday and ${b} eggs on Tuesday. How many eggs is that altogether?`, ans: a + b, distract: [[a + b - 10, 'forgot to carry'], [Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
-    () => { const a = rand(30, 60), b = rand(11, a - 12); return { story: `There were ${a} acorns in the basket. A squirrel ran off with ${b}. How many acorns are left?`, ans: a - b, distract: [[a + b, 'added instead of taking away']], explain: `${a} − ${b} = ${a - b}` }; },
-    () => { const a = rand(21, 48), b = rand(15, 45); return { story: `${N()} walked ${a} steps to the garden gate, then ${b} more steps to the apple tree. How many steps is that?`, ans: a + b, distract: [[a + b - 10, 'forgot to carry'], [Math.abs(a - b), 'took away instead of adding']], explain: `${a} + ${b} = ${a + b}` }; },
-  ],
-  3: [
-    () => { const a = rand(3, 6), b = rand(3, 9); return { story: `There are ${a} baskets. Each basket holds ${b} pears. How many pears are there?`, ans: a * b, distract: [[a + b, 'added instead of multiplied'], [a * (b + 1), 'next fact over']], explain: `${a} × ${b} = ${a * b}` }; },
-    () => { const a = rand(3, 8), b = rand(4, 9); return { story: `The garden has ${a} rows of carrots with ${b} carrots in each row. How many carrots?`, ans: a * b, distract: [[a + b, 'added instead of multiplied'], [(a + 1) * b, 'next fact over']], explain: `${a} rows of ${b}: ${a} × ${b} = ${a * b}` }; },
-    () => { const a = rand(3, 9); return { story: `${a} chickens are walking in the yard. Each chicken has 2 legs. How many legs are walking in the yard?`, ans: a * 2, distract: [[a + 2, 'added instead of multiplied'], [a * 4, 'counted 4 legs each']], explain: `${a} × 2 = ${a * 2}` }; },
-    () => { const a = rand(3, 7); return { story: `${a} children hold up both hands. How many fingers is that? Each hand has 5 fingers.`, ans: a * 10, distract: [[a * 5, 'counted one hand each'], [a + 10, 'added instead of multiplied']], explain: `${a} children × 2 hands = ${a * 2} hands, and ${a * 2} × 5 = ${a * 10}` }; },
-  ],
-  4: [
-    () => { const a = rand(2, 5), b = rand(3, 6), c = rand(2, 9); return { story: `${N()} has ${a} bags with ${b} marbles in each bag, then finds ${c} more marbles. How many marbles now?`, ans: a * b + c, distract: [[a * b, 'stopped after one step'], [a + b + c, 'added everything']], explain: `${a} × ${b} = ${a * b}, then ${a * b} + ${c} = ${a * b + c}` }; },
-    () => { const g = rand(2, 5), e = rand(2, 6), N = g * e; return { story: `${N} strawberries are shared equally among ${g} gnomes. How many strawberries does each gnome get?`, ans: e, distract: [[N - g, 'took away instead of sharing'], [g, 'picked the number of gnomes']], explain: `${g} × ${e} = ${N}, so each gnome gets ${e}.` }; },
-    () => { const t = rand(3, 5), c = rand(4, 8), gone = rand(2, c); return { story: `There are ${t} tables with ${c} candles on each. ${gone} candles go out. How many are still burning?`, ans: t * c - gone, distract: [[t * c, 'stopped after one step'], [t * c + gone, 'added instead of taking away']], explain: `${t} × ${c} = ${t * c}, then ${t * c} − ${gone} = ${t * c - gone}` }; },
-  ],
-};
-function genWords(L) {
-  const p = pick(STORIES[L])();
-  p.distract.push([p.ans + 1, 'counting slip'], [p.ans - 1, 'counting slip'], [p.ans + 10, 'off by ten']);
-  return Object.assign({ skill: 'words', speak: p.story }, p);
 }
 /* ---------- 2nd grade visuals (topics follow Khan Academy's 2nd grade units) ---------- */
 const f1 = x => x.toFixed(1);
@@ -911,7 +887,7 @@ function makeProblem(skill, level = state.levels[skill], seed = newSeed(), kind 
 }
 
 /* ---------- session ---------- */
-let screen = 'home', sess = null, lastChanges = [], confirmReset = false, confirmWipe = false, wiped = false, confirmTopic = null;
+let screen = 'home', sess = null, lastChanges = [], confirmReset = false, confirmWipe = false, wiped = false, confirmTopic = null, castSaved = false;
 /* Each round mixes four kinds of problems:
    - spaced review of missed concepts, due today (up to 30% of the round)
    - the current level (most problems)
@@ -1155,7 +1131,7 @@ function renderPlay() {
   return `
   <div class="play-top">
     <div class="ticks" aria-label="Problem ${sess.i + 1} of ${sess.probs.length}">${ticks}</div>
-    <span class="skill-label">${SKILLS[p.skill].name} · level ${p.level}${KIND_LABEL[p.kind] || ''}</span>
+    <span class="skill-label">${SKILLS[p.skill].name} · level ${p.level}${KIND_LABEL[p.kind] || ''}${p.world ? ` · ${esc(p.world)}` : ''}</span>
     ${canSpeak ? `<button class="say" data-act="say" aria-label="Read it out loud">${speakerIcon}</button>` : ''}
   </div>
   <div class="problem" id="problem">
@@ -1256,6 +1232,7 @@ function renderParent() {
     <div class="row-btns"><span>Read aloud</span><div class="seg">${[['all', 'Every problem'], ['stories', 'Stories only'], ['off', 'Off']].map(([v, t]) => `<button data-act="read" data-v="${v}" aria-pressed="${state.voice === v}">${t}</button>`).join('')}</div></div>
     <p class="note">${state.voice === 'off' ? 'Nothing is read out on its own. The speaker button still reads a problem when tapped.' : state.voice === 'stories' ? 'Story problems and instructions are read out. Plain number problems stay quiet.' : 'Every problem is read out when it appears.'}</p>
   </section>
+  ${renderStories()}
   ${renderReview()}
   <section>
     <h2>Paper practice</h2>
@@ -1298,6 +1275,24 @@ function resetTopic(k) {
   state.done[k] = 0; state.goalBase[k] = 0;
   state.cards = state.cards.filter(c => c.skill !== k);
   for (const key of Object.keys(state.slips)) if (key.startsWith(k + '|')) delete state.slips[key];
+}
+
+function renderStories() {
+  const season = currentSeason();
+  return `<section>
+    <h2>Story worlds</h2>
+    <p class="note">Story problems come from the worlds turned on here, plus the season's festival when seasonal stories are on.</p>
+    <div class="chips">${Object.keys(WORLDS).map(k => `<button class="chip" data-act="world" data-k="${k}" aria-pressed="${!!state.worlds[k]}"><strong>${esc(WORLDS[k].name())}</strong></button>`).join('')}</div>
+    <div class="row-btns"><span>Seasonal stories</span><div class="seg"><button data-act="seasonal" data-v="1" aria-pressed="${state.seasonal}">On</button><button data-act="seasonal" data-v="0" aria-pressed="${!state.seasonal}">Off</button></div><span class="note">This month: ${esc(season.name)}</span></div>
+    <form class="name-form" id="cast-form">
+      <label for="cast-friends">${esc(WORLDS.hunter.name())}: friends</label>
+      <input id="cast-friends" class="pick cast-input" maxlength="200" value="${esc(state.cast.friends)}" placeholder="Fu Dog, Cool Dracula" autocomplete="off">
+      <label for="cast-villains">Villains</label>
+      <input id="cast-villains" class="pick cast-input" maxlength="200" value="${esc(state.cast.villains)}" placeholder="the Death Raccoon" autocomplete="off">
+      <div class="row-btns"><button class="ghost" type="submit">Save characters</button>${castSaved ? '<span class="note">Saved.</span>' : ''}</div>
+      <p class="note">Separate names with commas. Write "the" in front of a name if the story should say "the Death Raccoon."</p>
+    </form>
+  </section>`;
 }
 
 function renderReview() {
@@ -1378,6 +1373,8 @@ app.addEventListener('click', e => {
       const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
     });
   }
+  else if (act === 'world') { state.worlds[b.dataset.k] = !state.worlds[b.dataset.k]; save(); render(); }
+  else if (act === 'seasonal') { state.seasonal = b.dataset.v === '1'; save(); render(); }
   else if (act === 'topic-reset') { confirmTopic = b.dataset.k; render(); }
   else if (act === 'topic-reset-no') { confirmTopic = null; render(); }
   else if (act === 'topic-reset-yes') { resetTopic(b.dataset.k); confirmTopic = null; save(); render(); }
@@ -1395,6 +1392,12 @@ app.addEventListener('click', e => {
   else if (act === 'goal-size') { state.goal.target = +b.dataset.n; save(); render(); }
 });
 app.addEventListener('submit', e => {
+  if (e.target.id === 'cast-form') {
+    e.preventDefault();
+    state.cast = { friends: document.getElementById('cast-friends').value.trim(), villains: document.getElementById('cast-villains').value.trim() };
+    castSaved = true; save(); render();
+    return;
+  }
   if (e.target.id !== 'name-form') return;
   e.preventDefault();
   state.childName = (document.getElementById('child-name')?.value || '').trim().slice(0, 24);
