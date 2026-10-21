@@ -3,6 +3,25 @@
    number rules, "I'm thinking of a number", sorting circles, two-number puzzles, number pyramids
    and shape puzzles. Uses helpers from app.js and thinking.js at the time a problem is made. */
 
+// Rules a child might notice. A puzzle is fair only if every rule that singles out one number
+// singles out the same number, so there is exactly one answer.
+const ODD_RULES = [
+  n => n % 2 === 0,      // even or odd
+  n => n >= 10,          // one digit or two
+  n => n % 5 === 0,      // in the 5s pattern
+  n => n % 10 === 0,     // a whole ten
+  n => n % 3 === 0,      // in the 3s pattern
+  n => isSq(n),          // a square number
+];
+function singledOut(items) {
+  const out = new Set();
+  for (const rule of ODD_RULES) {
+    const yes = items.filter(rule);
+    if (yes.length === 1) out.add(yes[0]);
+    if (yes.length === items.length - 1) out.add(items.find(n => !rule(n)));
+  }
+  return out;
+}
 function oddOneOut(L) {
   const kinds = [
     () => { const ev = shuffle([2, 4, 6, 8, 10, 12, 14, 16, 18, 20]).slice(0, 3), o = pick([3, 5, 7, 9, 11, 13, 15, 17, 19]); return { items: [...ev, o], odd: o, why: `${o} is the only odd number. The others are even.` }; },
@@ -11,7 +30,13 @@ function oddOneOut(L) {
     () => { const t = shuffle([10, 20, 30, 40, 50, 60, 70, 80, 90]).slice(0, 3); let o; do { o = rand(11, 95); } while (o % 10 === 0); return { items: [...t, o], odd: o, why: `${o} is not a whole ten. The others end in 0.` }; },
     () => { const sq = shuffle([1, 4, 9, 16, 25, 36]).slice(0, 3); let o; do { o = rand(2, 35); } while (isSq(o)); return { items: [...sq, o], odd: o, why: `${o} is not a square number. The others are.` }; },
   ];
-  return pick(L >= 2 ? kinds : kinds.slice(0, 4))();
+  const pool = L >= 2 ? kinds : kinds.slice(0, 4);
+  for (let tries = 0; tries < 200; tries++) {
+    const o = pick(pool)();
+    const s = singledOut(o.items);
+    if (s.size === 1 && s.has(o.odd)) return o;
+  }
+  return { items: [2, 4, 6, 7], odd: 7, why: '7 is the only odd number. The others are even.' };
 }
 
 // two overlapping sorting circles with dots in each region
