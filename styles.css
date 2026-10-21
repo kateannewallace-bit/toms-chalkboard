@@ -171,13 +171,6 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .coins { display: flex; flex-wrap: wrap; gap: 10px 14px; justify-content: center; align-items: flex-end; max-width: 520px; }
 .coin-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .coin-wrap small { color: var(--chalk-dim); font-size: .75rem; }
-.ck-face { fill: rgba(255,255,255,.04); stroke: var(--chalk); stroke-width: 4; }
-.ck-tick { stroke: var(--chalk); stroke-opacity: .5; stroke-width: 1.5; }
-.ck-tick.big { stroke-opacity: 1; stroke-width: 3; }
-.ck-num { fill: var(--chalk); font: 700 19px var(--font); stroke: var(--board); stroke-width: 5px; paint-order: stroke; }
-.ck-hour { stroke: var(--orange); stroke-width: 9; stroke-linecap: round; }
-.ck-min { stroke: var(--blue); stroke-width: 5; stroke-linecap: round; }
-.ck-pin { fill: var(--chalk); }
 .ruler { fill: #e9d9a6; stroke: #b49a55; stroke-width: 2; }
 .r-tick { stroke: #3a3220; stroke-width: 2; }
 .r-num { fill: #3a3220; font: 700 14px var(--font); }
@@ -314,3 +307,49 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .denom { font-size: 1.35rem; color: var(--yellow); line-height: 1.1; margin-top: 4px; font-variant-numeric: tabular-nums; }
 @media print { .denom { color: #1d1d1d; } }
 .cheer { margin: 0; font-size: 1.15rem; color: var(--chalk); max-width: 34ch; }
+
+/* thinking problems: bar models, balance, letters */
+.q.small { font-size: clamp(1.6rem, 6vw, 2.4rem); line-height: 1.35; }
+.bm { stroke: var(--board); stroke-width: 2; }
+.bm.c0 { fill: var(--blue); }
+.bm.c1 { fill: var(--green); }
+.bm.c2 { fill: var(--orange); }
+.bm.gap { fill: rgba(243,215,122,.25); stroke: var(--yellow); stroke-dasharray: 5 4; }
+.bm.q { fill: rgba(243,215,122,.18); stroke: var(--yellow); stroke-width: 2.5; stroke-dasharray: 6 4; }
+.bm-t { font: 700 18px var(--font); fill: var(--chalk); }
+.bm.c0 + .bm-t, .bm.c1 + .bm-t, .bm.c2 + .bm-t { fill: var(--board); }
+.bm-t.qt { fill: var(--yellow); }
+.bm-name { font: 700 15px var(--font); fill: var(--chalk-dim); }
+.bm-brace { fill: none; stroke: var(--chalk); stroke-width: 2.5; }
+.bal-beam { stroke: var(--chalk); stroke-width: 6; stroke-linecap: round; }
+.bal-stand { fill: var(--wood); }
+.bal-pin { fill: var(--chalk); }
+.bal-string { stroke: var(--chalk-dim); stroke-width: 1.5; }
+.bal-pan { fill: var(--chalk-dim); }
+.wt { fill: var(--blue); stroke: var(--board); stroke-width: 2; }
+.wt + .bm-t { fill: var(--board); }
+.wt.q { fill: rgba(243,215,122,.2); stroke: var(--yellow); stroke-dasharray: 5 4; }
+.wt.q + .bm-t { fill: var(--yellow); }
+.choices.pics .choice { padding: 10px 6px; min-height: 0; }
+.choices.pics .choice svg { width: 100%; height: auto; }
+.choices.pics .choice:nth-child(3):last-child { grid-column: 1 / -1; justify-self: center; width: calc(50% - 7px); }
+.choices.wordy { grid-template-columns: 1fr; }
+.choices.wordy .choice { font-size: clamp(1.05rem, 3.8vw, 1.3rem); text-align: left; padding: 14px 16px 14px 34px; min-height: 0; }
+
+/* big teaching clock */
+.clock-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.clock { width: min(100%, 440px); height: auto; }
+.ck-ring { fill: rgba(159,203,233,.08); stroke: var(--blue); stroke-width: 2; stroke-dasharray: 3 5; }
+.ck-minnum { fill: var(--blue); font: 700 17px var(--font); }
+.ck-face { fill: rgba(255,255,255,.05); stroke: var(--chalk); stroke-width: 5; }
+.ck-tick { stroke: var(--chalk); stroke-opacity: .55; stroke-width: 1.6; }
+.ck-tick.big { stroke-opacity: 1; stroke-width: 3.5; }
+.ck-num { fill: var(--chalk); font: 700 26px var(--font); stroke: var(--board); stroke-width: 6px; paint-order: stroke; }
+.ck-hour { stroke: var(--orange); stroke-width: 16; stroke-linecap: round; }
+.ck-min { stroke: var(--blue); stroke-width: 6; stroke-linecap: round; }
+.ck-min-tip { fill: var(--blue); }
+.ck-pin { fill: var(--chalk); }
+.clock-key { display: flex; gap: 8px 20px; flex-wrap: wrap; justify-content: center; font-size: .95rem; color: var(--chalk); }
+.clock-key span { display: inline-flex; align-items: center; gap: 8px; }
+.k-hour { display: inline-block; width: 26px; height: 12px; border-radius: 6px; background: var(--orange); }
+.k-min { display: inline-block; width: 46px; height: 5px; border-radius: 3px; background: var(--blue); }

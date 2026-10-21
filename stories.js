@@ -14,7 +14,7 @@ const WORLDS = {
     t: {
       add: ({ a, b }, c) => `${c.H} found ${a} silver arrows by the Bone Bridge. ${cap(c.F)} found ${b} more in the Whispering Woods. How many arrows do they have now?`,
       sub: ({ a, b }, c) => `${c.H} had ${a} glowing mushrooms. ${cap(c.V)} snatched ${b} of them and ran off into the Moonlit Marsh! How many mushrooms are left?`,
-      more: ({ a, b }, c) => `${cap(c.F)} counted ${a} muddy footprints left by ${c.V}. ${c.H} counted ${b}. How many more footprints did ${c.F} count?`,
+      more: ({ a, b }, c) => `${cap(c.F)} collected ${a} clues about ${c.V}. ${c.H} collected ${b}. How many more clues did ${c.F} collect?`,
       need: ({ T, a }, c) => `To build a trap for ${c.V}, ${c.H} needs ${T} sticks. ${cap(c.F)} has gathered ${a}. How many more sticks are needed?`,
       groups: ({ a, b }, c) => `${cap(c.F)} brought ${a} pouches with ${b} magic acorns in each pouch. How many magic acorns is that?`,
       share: ({ N, g }, c) => `${c.H} found ${N} gold coins in the hideout of ${c.V} and shared them equally among ${g} friends. How many coins does each friend get?`,
@@ -30,7 +30,7 @@ const WORLDS = {
       { kind: 'share', needs: 'anansi', f: ({ N, g }) => `Anansi tricked the sky god out of ${N} stories and shared them equally among ${g} of his sons. How many stories did each son get?` },
       { kind: 'more', needs: 'anansi', f: ({ a, b }) => `Anansi told ${a} tricky tales at the fire, and his sons told ${b}. How many more tales did Anansi tell?` },
       { kind: 'add', needs: 'kappa', f: ({ a, b }) => `Kappa the friendly yokai ate ${a} cucumbers at lunch and ${b} at supper. How many cucumbers did Kappa eat?` },
-      { kind: 'need', needs: 'kappa', f: ({ T, a }) => `Kappa must keep the water dish on his head full, or he loses his strength! It holds ${T} drops and has ${a}. How many more drops does Kappa need?` },
+      { kind: 'need', needs: 'kappa', f: ({ T, a }) => `Kappa must keep the water dish on his head full, or he loses his strength! When full it holds ${T} drops. Right now it has ${a}. How many more drops does Kappa need?` },
       { kind: 'need', needs: 'asclepius', f: ({ T, a }) => `Asclepius, god of medicine, needs ${T} healing herbs to cure a sick griffin. He has ${a}. How many more herbs does he need?` },
       { kind: 'groupsPlus', needs: 'asclepius', f: ({ a, b, c: x }) => `Asclepius mixed ${a} bottles of medicine with ${b} drops of honey in each, then added ${x} more drops for luck. How many drops of honey did he use?` },
       { kind: 'add', needs: 'tommyknocker', f: ({ a, b }) => `Deep in the mine, the Tommyknocker knocked ${a} times to warn of a cave-in, then ${b} more times. How many knocks?` },
@@ -71,7 +71,7 @@ const WORLDS = {
       groups: ({ a, b }) => `The pixies hung ${a} strings of acorn-cap cups under the hawthorn, with ${b} cups on each string. How many acorn cups?`,
       share: ({ N, g }, c) => `${c.me} left ${N} crumbs of pasty on the windowsill. ${g} pixies shared them equally. How many crumbs did each pixie get?`,
       groupsPlus: ({ a, b, c: x }) => `There are ${a} pixie houses under the hawthorn tree with ${b} pixies in each. Then ${x} more pixies come home from the moor. How many pixies are there now?`,
-      addSub: ({ a, b, c: x }) => `The pixies led a lost traveller in circles. He walked ${a} steps, then ${b} more, then ${x} steps back again. How many steps is he from where he started?`,
+      addSub: ({ a, b, c: x }) => `The pixies baked ${a} pasties, then ${b} more. A greedy knocker crept out of the mine and ate ${x}. How many pasties are left?`,
     },
   },
   tailypo: {
@@ -93,7 +93,7 @@ const WORLDS = {
       add: ({ a, b }) => `Odysseus and his crew rowed ${a} miles on Monday and ${b} miles on Tuesday. How far did they row?`,
       sub: ({ a, b }) => `The Cyclops Polyphemus had ${a} sheep in his cave. Odysseus's men escaped clinging underneath ${b} of them! How many sheep stayed in the cave?`,
       more: ({ a, b }) => `Medusa has ${a} snakes for hair. Her sister has ${b}. How many more snakes does Medusa have?`,
-      need: ({ T, a }) => `Athena's owl must carry ${T} messages before dawn. It has carried ${a}. How many more messages are left to carry?`,
+      need: ({ T, a }) => `Athena's owl must carry ${T} messages before dawn. It has carried ${a}. How many more messages must it carry?`,
       groups: ({ a, b }) => `Odysseus has ${a} ships, and each ship has ${b} oars. How many oars is that?`,
       share: ({ N, g }) => `Odysseus shared ${N} olives equally among ${g} hungry sailors. How many olives did each sailor get?`,
       groupsPlus: ({ a, b, c: x }) => `Hercules carried ${a} baskets with ${b} golden apples in each from the Garden of the Hesperides, plus ${x} more tucked in his lion-skin cloak. How many golden apples?`,
@@ -118,9 +118,9 @@ const WORLDS = {
     t: {
       add: ({ a, b }) => `In the enchanted forest, Puck played ${a} tricks before midnight and ${b} tricks after. How many tricks did Puck play?`,
       sub: ({ a, b }) => `The three witches had ${a} bat wings. "Double, double, toil and trouble!" They dropped ${b} into the cauldron. How many bat wings are left?`,
-      more: ({ a, b }) => `On Prospero's island, Ariel sang ${a} songs and Caliban grumbled ${b} grumbles. How many more songs than grumbles?`,
+      more: ({ a, b }) => `On Prospero's island, Ariel sang ${a} songs and Caliban sang ${b}. How many more songs did Ariel sing?`,
       need: ({ T, a }) => `Titania, the fairy queen, needs ${T} flower crowns for the fairy ball. Her fairies have made ${a}. How many more crowns do they need?`,
-      groups: ({ a, b }) => `The players acted their play ${a} times, with ${b} actors on stage each time. How many times did an actor walk on stage?`,
+      groups: ({ a, b }) => `On Prospero's island, ${a} sprites each carried ${b} seashells to Ariel. How many seashells did Ariel get?`,
       share: ({ N, g }) => `Bottom, who has a donkey's head, shared ${N} oat cakes equally among ${g} fairies. How many oat cakes did each fairy get?`,
       groupsPlus: ({ a, b, c: x }) => `The fairies hung ${a} strings of ${b} glowing lanterns in the forest. Then Puck added ${x} more. How many lanterns are glowing?`,
       addSub: ({ a, b, c: x }) => `Prospero's storm sent ${a} big waves, then ${b} more. Ariel calmed ${x} of them. How many waves are still crashing?`,
@@ -129,13 +129,13 @@ const WORLDS = {
   nature: {
     name: () => 'The nature table',
     t: {
-      add: ({ a, b }, c) => `${c.me} found ${a} acorns under the oak tree, then ${b} more. How many acorns is that now?`,
+      add: ({ a, b }, c) => `${c.me} found ${a} acorns under the oak tree, then ${b} more. How many acorns does ${c.me} have now?`,
       sub: ({ a, b }) => `There were ${a} beeswax candles on the nature table. ${b} burned down. How many are still burning?`,
       more: ({ a, b }) => `The hens laid ${a} eggs and the ducks laid ${b}. How many more eggs did the hens lay?`,
       need: ({ T, a }) => `The garden gnome needs ${T} stones for a wall around the herb bed. He has ${a}. How many more stones does he need?`,
       groups: ({ a, b }) => `There are ${a} baskets with ${b} pears in each basket. How many pears?`,
       share: ({ N, g }) => `${N} strawberries are shared equally among ${g} gnomes. How many strawberries does each gnome get?`,
-      groupsPlus: ({ a, b, c: x }, c) => `${c.me} has ${a} bags with ${b} marbles in each bag, then finds ${x} more. How many marbles now?`,
+      groupsPlus: ({ a, b, c: x }, c) => `${c.me} has ${a} bags with ${b} marbles in each bag, then finds ${x} more. How many marbles does ${c.me} have now?`,
       addSub: ({ a, b, c: x }, c) => `${c.me} picked ${a} blackberries, then ${b} more, then ate ${x}. How many blackberries are in the basket?`,
     },
   },
@@ -269,7 +269,7 @@ const SEASON_STORIES = {
     { kind: 'groupsPlus', f: ({ a, b, c: x }) => `The graveyard has ${a} rows of tombstones with ${b} in each row, plus ${x} crooked ones by the gate. How many tombstones?` },
     { kind: 'groupsPlus', f: ({ a, b, c: x }) => `The witch dropped ${b} frog legs into each of her ${a} cauldrons, then tossed in ${x} more for luck. How many frog legs went in?` },
     { kind: 'addSub', f: ({ a, b, c: x }) => `${a} will-o'-the-wisps glowed over the swamp, then ${b} more flickered awake. ${x} drifted away into the fog. How many are still glowing?` },
-    { kind: 'addSub', f: ({ a, b, c: x }, c) => `The banshee wailed ${a} times on Monday night and ${b} times on Tuesday. ${c.me} hid under the covers for ${x} of the wails. How many wails did ${c.me} hear?` },
+    { kind: 'addSub', f: ({ a, b, c: x }) => `At dusk, ${a} bats flew out of the belfry, and ${b} more followed. Before dawn, ${x} flew back inside. How many bats are still out in the night?` },
   ],
   11: [
     { kind: 'add', f: ({ a, b }) => `On the lantern walk, ${a} lanterns glowed at the front and ${b} at the back. How many lanterns lit the dark path?` },
@@ -310,7 +310,7 @@ function seasonWorld(m) {
       groups: ({ a, b }) => `There are ${a} ${v.containers} with ${b} ${t} in each. How many ${t} is that?`,
       share: ({ N, g }, c) => `${c.me} shared ${N} ${t} equally among ${g} friends at ${v.event}. How many did each friend get?`,
       groupsPlus: ({ a, b, c: x }, c) => `${c.me} filled ${a} ${v.containers} with ${b} ${t} each, then found ${x} more. How many ${t} altogether?`,
-      addSub: ({ a, b, c: x }, c) => `${c.me} had ${a} ${t} and found ${b} more ${v.place}. ${v.lose(x)} How many ${t} now?`,
+      addSub: ({ a, b, c: x }, c) => `${c.me} had ${a} ${t} and found ${b} more ${v.place}. ${v.lose(x)} How many ${t} are left?`,
     },
   };
 }

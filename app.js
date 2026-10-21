@@ -27,13 +27,14 @@ const SKILLS = {
   words:    { name: 'Story problems',  levels: ['Adding and taking away to 20', 'Two-digit stories', 'Groups and rows', 'Two steps and sharing'] },
   times:    { name: 'Times tables',    levels: ['×1, ×2, ×5, ×10', '×3 and ×4', 'Up to 10 × 10', 'Up to 12 × 12', 'Bigger facts (×11 to ×25)', 'Two-digit × one-digit (23 × 4)'] },
   missing:  { name: 'Mystery number',  levels: ['☐ + 3 = 7', 'Mystery number to 20', '☐ × 4 = 20', 'Two steps: 2 × ☐ + 1 = 9', 'Letters for numbers (n + 7 = 15)'] },
+  thinking: { name: 'Thinking problems', levels: ['Part and whole (to 10)', 'Find the missing part (to 20)', 'Which picture matches the story?', 'Comparing bars (to 50)', 'The balance scale', 'Letters for numbers (if a = 5)', 'Why does it work?', 'Two-step bar models', 'Balance with two mystery boxes', 'Equal-parts bars (× and ÷)', 'Two letters (a and b)', 'Three-part bars (to 100)'] },
   squares:  { name: 'Squares & roots', levels: ['Square numbers to 5 × 5', 'Square numbers to 10 × 10', 'Spot the square number', 'Square roots with blocks (to 10 × 10)', 'Odd numbers build squares', 'Square roots to 12 × 12', 'Squares to 15 × 15 (split into parts)', 'Square roots to 15 × 15', 'Squares to 19 × 19', 'Square roots to 19 × 19', '★ Root detective: the clues', '★ Root detective: solve it (to 30 × 30)'] },
   negatives: { name: 'Below zero',     levels: ['Frog jumps past zero', 'Take away past zero (3 − 5)', 'Start below zero (−4 + 6)', 'Cold-weather stories'] },
   bignums:  { name: 'Big numbers',     levels: ['Thousands blocks', 'Value of a digit to 9,999', 'Value of a digit to 999,999', 'Compare big numbers', 'Listen and find the number'] },
 };
 const GROUPS = [
   { title: '2nd grade', note: "Following Khan Academy's 2nd grade units", keys: ['add', 'sub', 'place', 'patterns', 'arrays', 'money', 'time', 'measure', 'graphs', 'shapes', 'words'] },
-  { title: 'Beyond 2nd grade', note: '', keys: ['times', 'missing', 'squares', 'negatives', 'bignums'] },
+  { title: 'Beyond 2nd grade', note: '', keys: ['times', 'missing', 'thinking', 'squares', 'negatives', 'bignums'] },
 ];
 const ORDER = Object.keys(SKILLS);
 const GOAL_SIZES = [25, 50, 100];
@@ -44,8 +45,8 @@ const goalMet = () => goalDone() >= state.goal.target;
 
 function defaultState() {
   return {
-    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, squares: 1, negatives: 1, bignums: 1 }, squaresV2: true,
-    on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, squares: false, negatives: false, bignums: false },
+    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, thinking: 1, squares: 1, negatives: 1, bignums: 1 }, squaresV2: true, quietDefault: true,
+    on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, thinking: true, squares: false, negatives: false, bignums: false },
     rec: {}, slips: {}, sessions: [], log: [],
     cards: [], stretch: {}, mastered: {}, cleared: 0,
     worlds: { hunter: true, knights: true, pixies: true, tailypo: true, greek: true, egypt: true, shakespeare: true, nature: true }, seasonal: true,
@@ -54,7 +55,7 @@ function defaultState() {
       villains: 'the Death Raccoon, Black Bigfoot, the Somalian Cave Witch, the gremlins, the Church Vampires',
       others: 'the Tailypo, the blue-eyed Tailypos',
     },
-    done: {}, goal: { skill: 'arrays', target: 50 }, goalBase: {}, total: 0, perSession: 10, voice: 'stories', answerMode: 'choose', narrator: 'tr', updatedAt: 0,
+    done: {}, goal: { skill: 'arrays', target: 50 }, goalBase: {}, total: 0, perSession: 10, voice: 'off', answerMode: 'choose', narrator: 'tr', updatedAt: 0,
   };
 }
 function normalize(s) {
@@ -76,6 +77,10 @@ function normalize(s) {
   }
   // older saves had an on/off read-aloud switch
   if (s.readAloud != null) { s.voice = s.readAloud ? 'all' : 'stories'; delete s.readAloud; }
+  // rounds are now 10, 20 or 30 problems; read-aloud now starts off (applied once to older saves)
+  if (![10, 20, 30].includes(s.perSession)) s.perSession = s.perSession > 10 ? 20 : 10;
+  if (raw.levels && !raw.quietDefault) s.voice = 'off';
+  s.quietDefault = true;
   // older saves only counted arrays
   if (s.arraysDone != null) { s.done.arrays = Math.max(s.done.arrays || 0, s.arraysDone); delete s.arraysDone; }
   return s;
@@ -558,20 +563,31 @@ function coinRow(list) {
 }
 const cents = c => c >= 100 ? `$${(c / 100).toFixed(2)}` : `${c}¢`;
 
-function clockSvg(h, m) {
-  const R = 92, c = 100;
-  let s = `<circle cx="${c}" cy="${c}" r="${R}" class="ck-face"/>`;
+// Big clock: thick short orange hour hand, thin long blue minute hand with an arrow tip,
+// a key underneath, and (for the early levels) a blue ring of minute numbers 0–55 outside the face.
+function clockSvg(h, m, minuteRing) {
+  const c = 160, R = minuteRing ? 112 : 140, P = (a, r) => [f1(c + Math.sin(a) * r), f1(c - Math.cos(a) * r)];
+  let s = '';
+  if (minuteRing) {
+    s += `<circle cx="${c}" cy="${c}" r="${R + 34}" class="ck-ring"/>`;
+    for (let k = 0; k < 12; k++) { const [x, y] = P(k * Math.PI / 6, R + 22); s += `<text x="${x}" y="${+y + 6}" text-anchor="middle" class="ck-minnum">${k * 5}</text>`; }
+  }
+  s += `<circle cx="${c}" cy="${c}" r="${R}" class="ck-face"/>`;
   for (let i = 0; i < 60; i++) {
-    const a = i * Math.PI / 30, big = i % 5 === 0, r1 = R - (big ? 11 : 5);
-    s += `<line x1="${f1(c + Math.sin(a) * r1)}" y1="${f1(c - Math.cos(a) * r1)}" x2="${f1(c + Math.sin(a) * (R - 2))}" y2="${f1(c - Math.cos(a) * (R - 2))}" class="ck-tick ${big ? 'big' : ''}"/>`;
+    const a = i * Math.PI / 30, big = i % 5 === 0, [x1, y1] = P(a, R - (big ? 13 : 6)), [x2, y2] = P(a, R - 2);
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="ck-tick ${big ? 'big' : ''}"/>`;
   }
   let nums = '';
-  for (let n = 1; n <= 12; n++) { const a = n * Math.PI / 6; nums += `<text x="${f1(c + Math.sin(a) * (R - 26))}" y="${f1(c - Math.cos(a) * (R - 26) + 7)}" text-anchor="middle" class="ck-num">${n}</text>`; }
+  for (let n = 1; n <= 12; n++) { const [x, y] = P(n * Math.PI / 6, R - 32); nums += `<text x="${x}" y="${+y + 9}" text-anchor="middle" class="ck-num">${n}</text>`; }
   const ha = ((h % 12) + m / 60) * Math.PI / 6, ma = m * Math.PI / 30;
-  s += `<line x1="${c}" y1="${c}" x2="${f1(c + Math.sin(ha) * 46)}" y2="${f1(c - Math.cos(ha) * 46)}" class="ck-hour"/>`;
-  s += `<line x1="${c}" y1="${c}" x2="${f1(c + Math.sin(ma) * 74)}" y2="${f1(c - Math.cos(ma) * 74)}" class="ck-min"/>`;
-  s += `<circle cx="${c}" cy="${c}" r="6" class="ck-pin"/>` + nums;
-  return `<svg class="clock" viewBox="0 0 200 200" width="210" role="img" aria-label="clock">${s}</svg>`;
+  // hour hand: short and fat; minute hand: long and thin, ending in an arrow at the edge
+  const [hx, hy] = P(ha, R * 0.48), [mx, my] = P(ma, R - 22), [tx, ty] = P(ma, R - 4);
+  const [l1x, l1y] = P(ma - 0.09, R - 24), [l2x, l2y] = P(ma + 0.09, R - 24);
+  s += `<line x1="${c}" y1="${c}" x2="${hx}" y2="${hy}" class="ck-hour"/>`;
+  s += `<line x1="${c}" y1="${c}" x2="${mx}" y2="${my}" class="ck-min"/><path d="M${tx} ${ty}L${l1x} ${l1y}L${l2x} ${l2y}Z" class="ck-min-tip"/>`;
+  s += `<circle cx="${c}" cy="${c}" r="9" class="ck-pin"/>` + nums;
+  return `<div class="clock-wrap"><svg class="clock" viewBox="0 0 320 320" width="440" role="img" aria-label="clock">${s}</svg>
+    <div class="clock-key"><span><i class="k-hour"></i>Short hand: hour</span><span><i class="k-min"></i>Long hand: minutes</span></div></div>`;
 }
 
 function rulerSvg(max, objs) {
@@ -692,7 +708,7 @@ function genMoney(L) {
     return { skill: 'money', visual: coinRow(list), ask: 'How much money is this?', speak: 'How much money is this? Start with the biggest coins.', ans: total, fmt: cents, distract: [[list.length, 'counted coins, not cents'], [total + 5, 'counting slip'], [total - 5, 'counting slip'], [total + 10, 'counting slip'], [total - 10, 'counting slip']], explain: `${list.slice().sort((a, b) => ['b', 'q', 'd', 'n', 'p'].indexOf(a) - ['b', 'q', 'd', 'n', 'p'].indexOf(b)).map(k => cents(k === 'b' ? 100 : COINS[k].v)).join(' + ')} = ${cents(total)}` };
   }
   const stories = [
-    () => { const a = rand(2, 7) * 5, b = rand(2, 9) * 5; return { story: `A pencil costs ${a}¢ and an eraser costs ${b}¢. How much for both?`, ans: a + b, distract: [[Math.abs(a - b), 'took away instead of adding']], explain: `${a}¢ + ${b}¢ = ${cents(a + b)}` }; },
+    () => { const a = rand(2, 7) * 5, b = rand(2, 9) * 5; return { story: `A pencil costs ${a}¢ and an eraser costs ${b}¢. How much do they cost together?`, ans: a + b, distract: [[Math.abs(a - b), 'took away instead of adding']], explain: `${a}¢ + ${b}¢ = ${cents(a + b)}` }; },
     () => { const d = rand(3, 7), cost = rand(2, d * 2 - 1) * 5; return { story: `${N()} has ${d} dimes and buys an apple for ${cost}¢. How much money is left?`, ans: d * 10 - cost, distract: [[d * 10 + cost, 'added instead of taking away'], [d - cost / 5, 'counted coins, not cents']], explain: `${d} dimes is ${d * 10}¢. ${d * 10}¢ − ${cost}¢ = ${d * 10 - cost}¢` }; },
     () => { const q = rand(1, 3), n = rand(1, 4); return { story: `Grandma gives ${N()} ${q} quarter${q > 1 ? 's' : ''} and ${n} nickel${n > 1 ? 's' : ''}. How much money is that?`, ans: q * 25 + n * 5, distract: [[q + n, 'counted coins, not cents'], [q * 25 + n, 'counted nickels as pennies']], explain: `${q} × 25¢ = ${q * 25}¢, ${n} × 5¢ = ${n * 5}¢. Together ${cents(q * 25 + n * 5)}` }; },
   ];
@@ -711,7 +727,7 @@ function genTime(L) {
   const seen = new Set([ok]), choices = [{ v: ok, ok: true }];
   for (const [v, tag] of cand) if (!seen.has(v) && choices.length < 4) { seen.add(v); choices.push({ v, tag }); }
   const said = m === 0 ? `${((h - 1) % 12) + 1} o'clock` : m === 30 ? `half past ${h}` : m === 15 ? `quarter past ${h}` : m === 45 ? `quarter to ${(h % 12) + 1}` : ok;
-  return { skill: 'time', visual: clockSvg(h, m), ask: 'What time is it?', speak: 'What time does the clock show? The short hand shows the hour.', ans: ok, choices, explain: `The short hand points ${m ? 'past' : 'to'} ${h}, and the long hand points to ${m === 0 ? '12' : m / 5}. It is ${ok}${said !== ok ? ` (${said})` : ''}.` };
+  return { skill: 'time', visual: clockSvg(h, m, L <= 3), ask: 'What time is it?', speak: 'What time does the clock show? The short hand shows the hour.', ans: ok, choices, explain: `The short hand points ${m ? 'past' : 'to'} ${h}, and the long hand points to ${m === 0 ? '12' : m / 5}. It is ${ok}${said !== ok ? ` (${said})` : ''}.` };
 }
 function genMeasure(L) {
   const unit = rng() < 0.6 ? 'cm' : 'inches', fmt = v => `${v} ${unit === 'cm' ? 'cm' : v === 1 ? 'inch' : 'inches'}`;
@@ -859,12 +875,13 @@ const HANDS = {
   words: 'Tell a story problem out loud about the day, then trade: your child makes one up for you to solve.',
   times: 'Count out loud while marching or jumping rope: the 3s on every third step, the 4s on every fourth.',
   missing: 'Hide some stones under a bowl: "There are 9 in all and I can see 5. How many are hiding?"',
+  thinking: 'Make a balance from a coat hanger and two paper cups. Put in stones or beans and find what makes it level. Or cut ribbon into parts and wholes.',
   squares: 'Build squares from beeswax blocks: 1, then 4, then 9. Add one L-shaped layer of a new color each time.',
   negatives: 'Draw a chalk number line on the sidewalk with 0 in the middle. Hop forward and back, past zero.',
   bignums: 'Find big numbers in the world: a page count, a mileage sign, the year. Read them together and build one with stick bundles.',
 };
 
-const GEN = { add: genAdd, sub: genSub, place: genPlace, patterns: genPatterns, arrays: genArrays, money: genMoney, time: genTime, measure: genMeasure, graphs: genGraphs, shapes: genShapes, words: genWords, times: genTimes, missing: genMissing, squares: genSquares, negatives: genNegatives, bignums: genBignums };
+const GEN = { add: genAdd, sub: genSub, place: genPlace, patterns: genPatterns, arrays: genArrays, money: genMoney, time: genTime, measure: genMeasure, graphs: genGraphs, shapes: genShapes, words: genWords, times: genTimes, missing: genMissing, squares: genSquares, negatives: genNegatives, bignums: genBignums, thinking: genThinking };
 
 function buildChoices(ans, distract, neg) {
   const seen = new Set([String(ans)]), out = [{ v: ans, ok: true }];
@@ -887,7 +904,8 @@ function makeProblem(skill, level = state.levels[skill], seed = newSeed(), kind 
     const p = GEN[skill](level);
     p.level = level; p.seed = seed; p.kind = kind;
     p.choices = p.choices ? shuffle(p.choices) : buildChoices(p.ans, p.distract, p.neg);
-    if (p.choices.every(c => c.say || (typeof c.v === 'string' && !/\d/.test(c.v)))) p.speak = `${p.speak || ''} ${listOr(p.choices.map(c => c.say || c.v))}?`.trim();
+    if (p.sayChoices) p.speak = `${p.speak || ''} ${p.choices.map((c, i) => `Choice ${i + 1}: ${spoken(c.say || c.v)}.`).join(' ')}`.trim();
+    else if (p.choices.every(c => c.say || (typeof c.v === 'string' && !/\d/.test(c.v)))) p.speak = `${p.speak || ''} ${listOr(p.choices.map(c => c.say || c.v))}?`.trim();
     p.tries = 0; p.wrong = []; p.done = false; p.revealed = false;
     p.key = (p.q || '') + (p.story || '') + (p.visual || '') + p.ans;
     return p;
@@ -904,7 +922,7 @@ let screen = 'home', sess = null, lastChanges = [], confirmReset = false, confir
 const REVIEW_DAYS = [1, 3, 7, 14, 30];
 const DAY = 864e5;
 const startOfDay = () => new Date().setHours(0, 0, 0, 0);
-const UNLOCK_ORDER = ['add', 'sub', 'place', 'arrays', 'times', 'words', 'money', 'time', 'patterns', 'measure', 'graphs', 'shapes', 'missing', 'squares', 'bignums', 'negatives'];
+const UNLOCK_ORDER = ['add', 'sub', 'place', 'arrays', 'times', 'words', 'money', 'time', 'patterns', 'measure', 'graphs', 'shapes', 'missing', 'thinking', 'squares', 'bignums', 'negatives'];
 function readyToStretch(k) {
   const r = (state.rec[k] || []).slice(-6);
   return r.length >= 4 && r.filter(Boolean).length / r.length >= 0.75;
@@ -1129,12 +1147,12 @@ function renderPlay() {
   const ticks = sess.probs.map((_, j) => `<span class="${j < sess.results.length ? (sess.results[j] ? 'done' : 'miss') : j === sess.i ? 'now' : ''}"></span>`).join('');
   let fb = '';
   if (p.done && !p.revealed) fb = `<span class="big good">${esc(p.praise)}</span><span class="how">${esc(p.explain)}</span>`;
-  else if (p.revealed) fb = `<span class="big try">The answer is ${esc(p.fmt ? p.fmt(p.ans) : p.ans)}.</span><span class="how">${esc(p.explain)}</span>`;
+  else if (p.revealed) fb = `<span class="big try">The answer is ${esc(p.ansLabel || (p.fmt ? p.fmt(p.ans) : p.ans))}.</span><span class="how">${esc(p.explain)}</span>`;
   else if (p.tries) fb = `<span class="big try">${esc(p.nudge)}</span>`;
   const correctIdx = p.choices.findIndex(c => c.ok);
   const choices = p.choices.map((c, j) => {
     const cls = p.wrong.includes(j) ? 'no' : (p.done && j === correctIdx ? 'ok' : '');
-    return `<button class="choice ${cls}" data-act="pick" data-i="${j}" ${p.done || p.wrong.includes(j) ? 'disabled' : ''}><span class="key">${j + 1}</span>${esc(p.fmt ? p.fmt(c.v) : c.v)}</button>`;
+    return `<button class="choice ${cls}" data-act="pick" data-i="${j}" ${p.done || p.wrong.includes(j) ? 'disabled' : ''}><span class="key">${j + 1}</span>${c.html || esc(p.fmt ? p.fmt(c.v) : c.v)}</button>`;
   }).join('');
   const last = sess.i === sess.probs.length - 1;
   return `
@@ -1145,11 +1163,11 @@ function renderPlay() {
   </div>
   <div class="problem" id="problem">
     ${p.story ? `<p class="story">${esc(p.story)}</p>` : ''}
-    ${p.q ? `<div class="q">${p.q}</div>` : ''}
+    ${p.q ? `<div class="q ${p.qClass || ''}">${p.q}</div>` : ''}
     ${p.visual || ''}
     ${p.ask ? `<div class="ask">${esc(p.ask)}</div>` : ''}
   </div>
-  ${typeable(p) ? keypadHtml(p) : `<div class="choices">${choices}</div>`}
+  ${typeable(p) ? keypadHtml(p) : `<div class="choices ${p.wordy ? 'wordy' : ''} ${p.pics ? 'pics' : ''}">${choices}</div>`}
   <div class="feedback">${fb}</div>
   ${p.done ? `<div class="next-row"><button class="start" data-act="next" id="next">${last ? 'See my stars' : 'Next'}</button></div>` : ''}
   <button class="link" data-act="home" style="align-self:flex-start">Stop and go home</button>`;
@@ -1169,7 +1187,7 @@ function printRound() {
   const writeIn = p => typeof p.ans === 'number' && !(p.fmt === cents && p.ans >= 100);
   const item = p => `<li class="pp">
       <div class="pp-body">${p.story ? `<p class="story">${esc(p.story)}</p>` : ''}${p.q ? `<div class="q">${p.q}</div>` : ''}${p.visual || ''}${p.ask ? `<div class="ask">${esc(p.ask)}</div>` : ''}</div>
-      ${writeIn(p) ? `<div class="pp-write"><span class="pp-box"></span>${esc(unitOf(p))}</div>` : `<div class="pp-circle">Circle one: ${p.choices.map(c => `<span>${esc(p.fmt ? p.fmt(c.v) : c.v)}</span>`).join('')}</div>`}
+      ${writeIn(p) ? `<div class="pp-write"><span class="pp-box"></span>${esc(unitOf(p))}</div>` : `<div class="pp-circle">Circle one: ${p.choices.map(c => `<span>${c.html || esc(p.fmt ? p.fmt(c.v) : c.v)}</span>`).join('')}</div>`}
     </li>`;
   document.getElementById('print').innerHTML = `
     <header class="pp-head"><h1>${childName() ? esc(childName()) + "'s paper round" : 'Paper round'}</h1><span>${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span></header>
@@ -1279,7 +1297,7 @@ function renderParent() {
     ${nameForm("Child's name", 'Save')}
     <div class="row-btns"><span>Answers</span><div class="seg"><button data-act="mode" data-v="choose" aria-pressed="${state.answerMode !== 'type'}">Pick from four</button><button data-act="mode" data-v="type" aria-pressed="${state.answerMode === 'type'}">Type the number</button></div></div>
     <p class="note">Typing tests real recall and gives practice writing numerals. Problems whose answer is a word, a time or a sign still show choices.</p>
-    <div class="row-btns"><span>Problems per round</span><div class="seg">${[5, 10, 15].map(n => `<button data-act="per" data-n="${n}" aria-pressed="${state.perSession === n}">${n}</button>`).join('')}</div></div>
+    <div class="row-btns"><span>Problems per round</span><div class="seg">${[10, 20, 30].map(n => `<button data-act="per" data-n="${n}" aria-pressed="${state.perSession === n}">${n}</button>`).join('')}</div></div>
     <div class="row-btns"><span>End-of-round cheer</span><div class="seg"><button data-act="narr" data-v="tr" aria-pressed="${tr()}">Colonel Roosevelt</button><button data-act="narr" data-v="plain" aria-pressed="${!tr()}">Plain</button></div></div>
     ${canSpeak ? `<div class="row-btns"><label for="voice">Voice</label>
       <select id="voice" class="pick">${['', ...voices.map(v => v.name)].map(nm => `<option value="${esc(nm)}" ${nm === savedVoiceName() ? 'selected' : ''}>${nm ? esc(nm) : `Automatic${chosenVoice() ? ` (${esc(chosenVoice().name)})` : ''}`}</option>`).join('')}</select>
