@@ -6,10 +6,12 @@
 
 const THINK_THINGS = ['acorns', 'gold coins', 'dragon scales', 'silver arrows', 'cucumbers', 'saffron buns', 'scrolls', 'seashells', 'marbles', 'glowing mushrooms'];
 const shortName = n => n.replace(/^the /i, '').split(/,| the /)[0].trim();
+// for sentences: drop descriptions ("Kappa the friendly yokai" → "Kappa") but keep a leading "the" ("the Tommyknocker")
+const sentName = n => (/^the /i.test(n) ? 'the ' : '') + shortName(n);
 function thinkPeople() {
   const list = String(state.cast.friends || '').split(',').map(x => x.trim()).filter(Boolean);
   const f = shuffle(list.length >= 2 ? list : ['Fu Dog', 'Kappa the friendly yokai', 'Anansi']);
-  return { me: N(), A: f[0], B: f[1], a: shortName(f[0]), b: shortName(f[1]), t: pick(THINK_THINGS) };
+  return { me: N(), A: f[0], B: f[1], a: sentName(f[0]), b: sentName(f[1]), t: pick(THINK_THINGS) };
 }
 
 // One bar split into parts, with a bracket over the whole. parts: [{ v, show, q }]

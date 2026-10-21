@@ -28,13 +28,15 @@ const SKILLS = {
   times:    { name: 'Times tables',    levels: ['×1, ×2, ×5, ×10', '×3 and ×4', 'Up to 10 × 10', 'Up to 12 × 12', 'Bigger facts (×11 to ×25)', 'Two-digit × one-digit (23 × 4)'] },
   missing:  { name: 'Mystery number',  levels: ['☐ + 3 = 7', 'Mystery number to 20', '☐ × 4 = 20', 'Two steps: 2 × ☐ + 1 = 9', 'Letters for numbers (n + 7 = 15)'] },
   thinking: { name: 'Thinking problems', levels: ['Part and whole (to 10)', 'Find the missing part (to 20)', 'Which picture matches the story?', 'Comparing bars (to 50)', 'The balance scale', 'Letters for numbers (if a = 5)', 'Why does it work?', 'Two-step bar models', 'Balance with two mystery boxes', 'Equal-parts bars (× and ÷)', 'Two letters (a and b)', 'Three-part bars (to 100)'] },
+  logic:    { name: 'Logic & puzzles', levels: ['Odd one out', 'Odd one out: trickier rules', 'True or false?', 'True or false: both sides', 'Compare sums: >, < or =', 'What is the rule?', "I'm thinking of a number", 'Sorting circles', 'Find the two numbers', 'Number pyramids', 'Shape puzzles'] },
+  bonds:    { name: 'Number bonds', levels: ['Number bonds to 10', 'Number bonds to 20', 'Make 10 to add (8 + 5)', 'Subtract from 10 (13 − 8)', 'Bonds with tens (to 100)', 'Break apart to add (34 + 25)', 'Bridge to the next ten (47 + 8)', 'Unit bars (3 times as many)'] },
   squares:  { name: 'Squares & roots', levels: ['Square numbers to 5 × 5', 'Square numbers to 10 × 10', 'Spot the square number', 'Square roots with blocks (to 10 × 10)', 'Odd numbers build squares', 'Square roots to 12 × 12', 'Squares to 15 × 15 (split into parts)', 'Square roots to 15 × 15', 'Squares to 19 × 19', 'Square roots to 19 × 19', '★ Root detective: the clues', '★ Root detective: solve it (to 30 × 30)'] },
   negatives: { name: 'Below zero',     levels: ['Frog jumps past zero', 'Take away past zero (3 − 5)', 'Start below zero (−4 + 6)', 'Cold-weather stories'] },
   bignums:  { name: 'Big numbers',     levels: ['Thousands blocks', 'Value of a digit to 9,999', 'Value of a digit to 999,999', 'Compare big numbers', 'Listen and find the number'] },
 };
 const GROUPS = [
-  { title: '2nd grade', note: "Following Khan Academy's 2nd grade units", keys: ['add', 'sub', 'place', 'patterns', 'arrays', 'money', 'time', 'measure', 'graphs', 'shapes', 'words'] },
-  { title: 'Beyond 2nd grade', note: '', keys: ['times', 'missing', 'thinking', 'squares', 'negatives', 'bignums'] },
+  { title: '2nd grade', note: "Following Khan Academy's 2nd grade units", keys: ['add', 'sub', 'bonds', 'place', 'patterns', 'arrays', 'money', 'time', 'measure', 'graphs', 'shapes', 'words'] },
+  { title: 'Beyond 2nd grade', note: '', keys: ['times', 'missing', 'thinking', 'logic', 'squares', 'negatives', 'bignums'] },
 ];
 const ORDER = Object.keys(SKILLS);
 const GOAL_SIZES = [25, 50, 100];
@@ -45,8 +47,8 @@ const goalMet = () => goalDone() >= state.goal.target;
 
 function defaultState() {
   return {
-    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, thinking: 1, squares: 1, negatives: 1, bignums: 1 }, squaresV2: true, quietDefault: true,
-    on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, thinking: true, squares: false, negatives: false, bignums: false },
+    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, thinking: 1, logic: 1, bonds: 3, squares: 1, negatives: 1, bignums: 1 }, squaresV2: true, quietDefault: true,
+    on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, thinking: true, logic: true, bonds: true, squares: false, negatives: false, bignums: false },
     rec: {}, slips: {}, sessions: [], log: [],
     cards: [], stretch: {}, mastered: {}, cleared: 0,
     worlds: { hunter: true, knights: true, pixies: true, tailypo: true, greek: true, egypt: true, shakespeare: true, nature: true }, seasonal: true,
@@ -875,13 +877,15 @@ const HANDS = {
   words: 'Tell a story problem out loud about the day, then trade: your child makes one up for you to solve.',
   times: 'Count out loud while marching or jumping rope: the 3s on every third step, the 4s on every fourth.',
   missing: 'Hide some stones under a bowl: "There are 9 in all and I can see 5. How many are hiding?"',
+  logic: 'Play "I\'m thinking of a number" at dinner with three clues, then let your child give you the clues. Or sort the toy basket into two hoops and see what belongs in both.',
+  bonds: 'Put 10 acorns in a bowl, hide some under a cup, and ask how many are hiding. Then try 20. Saying the pairs out loud (7 and 3, 6 and 4…) is the whole trick.',
   thinking: 'Make a balance from a coat hanger and two paper cups. Put in stones or beans and find what makes it level. Or cut ribbon into parts and wholes.',
   squares: 'Build squares from beeswax blocks: 1, then 4, then 9. Add one L-shaped layer of a new color each time.',
   negatives: 'Draw a chalk number line on the sidewalk with 0 in the middle. Hop forward and back, past zero.',
   bignums: 'Find big numbers in the world: a page count, a mileage sign, the year. Read them together and build one with stick bundles.',
 };
 
-const GEN = { add: genAdd, sub: genSub, place: genPlace, patterns: genPatterns, arrays: genArrays, money: genMoney, time: genTime, measure: genMeasure, graphs: genGraphs, shapes: genShapes, words: genWords, times: genTimes, missing: genMissing, squares: genSquares, negatives: genNegatives, bignums: genBignums, thinking: genThinking };
+const GEN = { add: genAdd, sub: genSub, place: genPlace, patterns: genPatterns, arrays: genArrays, money: genMoney, time: genTime, measure: genMeasure, graphs: genGraphs, shapes: genShapes, words: genWords, times: genTimes, missing: genMissing, squares: genSquares, negatives: genNegatives, bignums: genBignums, thinking: genThinking, logic: genLogic, bonds: genBonds };
 
 function buildChoices(ans, distract, neg) {
   const seen = new Set([String(ans)]), out = [{ v: ans, ok: true }];
@@ -922,7 +926,7 @@ let screen = 'home', sess = null, lastChanges = [], confirmReset = false, confir
 const REVIEW_DAYS = [1, 3, 7, 14, 30];
 const DAY = 864e5;
 const startOfDay = () => new Date().setHours(0, 0, 0, 0);
-const UNLOCK_ORDER = ['add', 'sub', 'place', 'arrays', 'times', 'words', 'money', 'time', 'patterns', 'measure', 'graphs', 'shapes', 'missing', 'thinking', 'squares', 'bignums', 'negatives'];
+const UNLOCK_ORDER = ['add', 'sub', 'place', 'arrays', 'times', 'words', 'money', 'time', 'patterns', 'measure', 'graphs', 'shapes', 'missing', 'thinking', 'logic', 'bonds', 'squares', 'bignums', 'negatives'];
 function readyToStretch(k) {
   const r = (state.rec[k] || []).slice(-6);
   return r.length >= 4 && r.filter(Boolean).length / r.length >= 0.75;

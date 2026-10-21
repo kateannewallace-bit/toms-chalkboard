@@ -353,3 +353,28 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .clock-key span { display: inline-flex; align-items: center; gap: 8px; }
 .k-hour { display: inline-block; width: 26px; height: 12px; border-radius: 6px; background: var(--orange); }
 .k-min { display: inline-block; width: 46px; height: 5px; border-radius: 3px; background: var(--blue); }
+
+/* number bonds, sorting circles, pyramids, shape puzzles */
+.bonds { max-width: 100%; height: auto; }
+.bond-pair { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.bond { stroke: var(--board); stroke-width: 3; }
+.bond.whole { fill: var(--blue); }
+.bond.part { fill: var(--green); }
+.bond.q { fill: rgba(243,215,122,.18); stroke: var(--yellow); stroke-dasharray: 6 4; }
+.bond-t { font: 700 24px var(--font); fill: var(--board); }
+.bond-t.qt { fill: var(--yellow); }
+.bond-line { stroke: var(--chalk); stroke-width: 3; }
+.venn-a { fill: rgba(159,203,233,.16); stroke: var(--blue); stroke-width: 3; }
+.venn-b { fill: rgba(169,217,161,.16); stroke: var(--green); stroke-width: 3; }
+.venn-l { font: 700 18px var(--font); }
+.venn-l.a { fill: var(--blue); }
+.venn-l.b { fill: var(--green); }
+.venn-dot { fill: var(--yellow); }
+.pyr { fill: var(--blue); stroke: var(--board); stroke-width: 2; }
+.pyr.q { fill: rgba(243,215,122,.18); stroke: var(--yellow); stroke-dasharray: 6 4; }
+.bm-t.dark { fill: var(--board); }
+.shp { width: .8em; height: .8em; vertical-align: -0.05em; }
+.shp.c { fill: var(--pink); }
+.shp.s { fill: var(--blue); }
+.shp.t { fill: var(--green); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

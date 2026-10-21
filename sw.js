@@ -1,7 +1,7 @@
 // Offline support. Bump VERSION whenever app files change so devices pick up the update.
-const VERSION = 'chalkboard-v21';
+const VERSION = 'chalkboard-v22';
 const SHELL = [
-  './', 'index.html', 'styles.css', 'stories.js', 'thinking.js', 'app.js', 'config.js', 'manifest.webmanifest',
+  './', 'index.html', 'styles.css', 'stories.js', 'thinking.js', 'logic.js', 'bonds.js', 'app.js', 'config.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'money/penny.png', 'money/nickel.jpg', 'money/dime.png', 'money/quarter.png', 'money/dollar.jpg',
   'tr/laugh.jpg', 'tr/laugh-closeup.jpg', 'tr/grin.jpg', 'tr/laughing-together.jpg', 'tr/automobile.jpg',
@@ -37,7 +37,8 @@ self.addEventListener('fetch', e => {
   // App files: try the network so updates arrive, fall back to the cache when offline.
   if (url.origin === self.location.origin) {
     e.respondWith(
-      fetch(e.request).then(res => {
+      // 'no-cache' asks the server whether the file changed, so updates show up right away
+      fetch(e.request, { cache: 'no-cache' }).then(res => {
         if (res.ok) caches.open(VERSION).then(c => c.put(e.request, res.clone()));
         return res;
       }).catch(() => caches.match(e.request).then(hit => hit || caches.match('index.html')))
