@@ -58,12 +58,12 @@ const VAR = v => `<em class="var">${v}</em>`;
 /* "Why does it work?" — the reasons are the choices */
 function whyProblem() {
   const kinds = [
-    () => { const a = rand(6, 9), b = rand(3, 9), k = 10 - a; return { q: `${a} + ${b} = 10 + ${b - k}`, ok: `I moved ${k} from the ${b} to the ${a} to make 10`, wrong: [`I added ${k} to both numbers`, `${a} and 10 are almost the same`, `I took ${k} away from both numbers`], explain: `${a} needs ${k} more to make 10, so take ${k} from the ${b}. The total stays the same.` }; },
-    () => { const a = rand(3, 9), b = rand(3, 9); return { q: `${a} + ${b} = ${b} + ${a}`, ok: 'Adding in any order gives the same total', wrong: ['Both sides have the same first number', `${Math.max(a, b)} is the bigger number`, 'The bigger number always goes first'], explain: `${a} and ${b} make ${a + b} whichever comes first.` }; },
+    () => { const a = rand(6, 9), b = rand(3, 9), k = 10 - a; return { q: `${a} + ${b} = 10 + ${b - k}`, ok: `I moved ${k} from the ${b} to the ${a} to make 10`, wrong: [`I added ${k} to both numbers`, `I took ${k} away from both numbers`, `Adding always makes 10`], explain: `${a} needs ${k} more to make 10, so take ${k} from the ${b}. The total stays the same.` }; },
+    () => { const a = rand(3, 8), b = rand(a + 1, 9); return { q: `${a} + ${b} = ${b} + ${a}`, ok: 'Adding in any order gives the same total', wrong: ['Both sides start with the same number', 'The bigger number must go first', 'Adding always makes 10'], explain: `${a} and ${b} make ${a + b} whichever comes first.` }; },
     () => { const a = rand(12, 19), b = rand(6, 9), k = 10 - b; return { q: `${a} − ${b} = ${a + k} − 10`, ok: `I added ${k} to both numbers, so the difference stays the same`, wrong: [`I moved ${k} from one number to the other`, `I added ${k} to just one number`, 'Taking away always gives 10'], explain: `If both numbers grow by ${k}, the gap between them doesn't change.` }; },
-    () => { const a = rand(3, 9); return { q: `${a} + ${a + 1} = ${a} + ${a} + 1`, ok: `${a + 1} is one more than ${a}`, wrong: [`${a} is one more than ${a + 1}`, 'Doubles are always even', `I added 1 to both numbers`], explain: `${a} + ${a + 1} is the double ${a} + ${a}, plus 1 more.` }; },
-    () => { const a = rand(2, 5), b = rand(3, 6); return { q: `${a} × ${b} = ${b} × ${a}`, ok: `${a} rows of ${b} has the same dots as ${b} rows of ${a}`, wrong: ['Multiplying makes numbers bigger', `${a} and ${b} add up to the same`, 'The first number is always the rows'], explain: `Turn the array sideways: ${a} rows of ${b} becomes ${b} rows of ${a}. Still ${a * b} dots.` }; },
-    () => { const a = rand(2, 9) * 10 + rand(1, 8), b = 9; return { q: `${a} + 9 = ${a} + 10 − 1`, ok: 'Adding 9 is like adding 10 and taking 1 back', wrong: ['9 and 10 are the same', 'I took 1 away from both numbers', 'Adding 10 is always easier than 1'], explain: `${a} + 10 = ${a + 10}, then 1 back: ${a + 9}.` }; },
+    () => { const a = rand(3, 9); return { q: `${a} + ${a + 1} = ${a} + ${a} + 1`, ok: `${a + 1} is one more than ${a}`, wrong: [`${a} is one more than ${a + 1}`, `I added 1 to both numbers`, 'Adding 1 never changes a number'], explain: `${a} + ${a + 1} is the double ${a} + ${a}, plus 1 more.` }; },
+    () => { const a = rand(2, 5), b = rand(3, 6); return { q: `${a} × ${b} = ${b} × ${a}`, ok: `${a} rows of ${b} has the same dots as ${b} rows of ${a}`, wrong: ['Multiplying is the same as adding', `${a} rows of ${b} has more dots than ${b} rows of ${a}`, 'Only the first number matters'], explain: `Turn the array sideways: ${a} rows of ${b} becomes ${b} rows of ${a}. Still ${a * b} dots.` }; },
+    () => { const a = rand(2, 9) * 10 + rand(1, 8), b = 9; return { q: `${a} + 9 = ${a} + 10 − 1`, ok: 'Adding 9 is like adding 10 and taking 1 back', wrong: ['9 and 10 are the same', 'I took 1 away from both numbers', 'Adding 9 is the same as adding 1'], explain: `${a} + 10 = ${a + 10}, then 1 back: ${a + 9}.` }; },
   ];
   const w = pick(kinds)();
   return {
@@ -106,11 +106,11 @@ function genThinking(L) {
     case 4: { // comparing bars, to 50
       const a = rand(12, 50), b = rand(3, a - 3);
       if (rng() < 0.5) return { ...base, ...say(`${cap(P.A)} has ${a} ${t}. ${cap(P.B)} has ${b}. How many more does ${P.a} have?`),
-        visual: compareSvg({ name: P.a, v: a, show: a }, { name: P.b, v: b, show: b }, { show: '?', q: true }), ask: 'How big is the gap?',
+        visual: compareSvg({ name: P.a, v: a, show: a }, { name: P.b, v: b, show: b }, { show: '?', q: true }), ask: 'The dashed part shows how many more.',
         ans: a - b, distract: [[a + b, 'added instead of comparing'], [a, 'gave just one bar'], [b, 'gave just one bar']], explain: `${a} − ${b} = ${a - b}.` };
       const d = a - b;
       return { ...base, ...say(`${cap(P.B)} has ${b} ${t}. ${cap(P.A)} has ${d} more. How many does ${P.a} have?`),
-        visual: compareSvg({ name: P.a, v: a, show: '?', q: true }, { name: P.b, v: b, show: b }, { show: d }), ask: 'How long is the top bar?',
+        visual: compareSvg({ name: P.a, v: a, show: '?', q: true }, { name: P.b, v: b, show: b }, { show: d }), ask: `The top bar is the bottom bar plus ${d} more.`,
         ans: a, distract: [[Math.abs(b - d), 'took away instead of adding'], [d, 'gave just the difference'], [a + 10, 'off by ten']], explain: `${b} + ${d} = ${a}.` };
     }
     case 5: { // balance scale, one mystery box
@@ -172,7 +172,7 @@ function genThinking(L) {
           [`${VAR('a')} + ${VAR('b')}`, 'a plus b', 'b + a', ['a × b', 'a − b', 'a + a']],
         ];
         const [q, said, ok, wrong] = pick(sets);
-        return { ...base, q, qClass: 'small', ask: 'Which one is always the same, whatever the letters are?', speak: `Which one is always the same as ${said}, whatever the numbers are?`, ans: ok, sayChoices: true,
+        return { ...base, q, qClass: 'small', ask: 'Which one always equals it, whatever numbers the letters stand for?', speak: `Which one is always the same as ${said}, whatever the numbers are?`, ans: ok, sayChoices: true,
           choices: [{ v: ok, ok: true }, ...wrong.map(v => ({ v, tag: 'picked an expression that is not always equal' }))], explain: `${ok} is always equal to ${q.replace(/<[^>]+>/g, '')}. Try it with any numbers!` };
       }
       const forms = [

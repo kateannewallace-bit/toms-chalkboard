@@ -7,6 +7,15 @@ const pick = a => a[Math.floor(rng() * a.length)];
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const isSq = n => Number.isInteger(Math.sqrt(n));
+const ONES_W = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS_W = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+function numberWords(n) {  // up to 9,999: 1465 → "one thousand, four hundred sixty-five"
+  const under100 = x => x < 20 ? ONES_W[x] : TENS_W[Math.floor(x / 10)] + (x % 10 ? '-' + ONES_W[x % 10] : '');
+  const under1000 = x => (x >= 100 ? ONES_W[Math.floor(x / 100)] + ' hundred' + (x % 100 ? ' ' : '') : '') + (x % 100 || x < 100 ? under100(x % 100) : '');
+  if (n >= 1000) return ONES_W[Math.floor(n / 1000)] + ' thousand' + (n % 1000 ? (n % 1000 >= 100 ? ', ' : ' ') + under1000(n % 1000) : '');
+  return under1000(n);
+}
+const pl = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;  // 1 ten, 2 tens
 const BOX = '<span class="box" aria-label="mystery number"></span>';
 // The child's name, set on the grown-ups page. Stories fall back to "Pip" until a name is set.
 const childName = () => (state.childName || '').trim();
@@ -255,7 +264,7 @@ function genAdd(L) {
   if (L >= 3) explain = `Ones first: ${au} + ${bu} = ${au + bu}. Write ${(au + bu) % 10}, carry 1 ten. ${a} + ${b} = ${ans}`;
   const useBlocks = (L === 3 || L === 4) && rng() < 0.5;
   const visual = L === 2 ? tenFrames(a, b, 'add') : useBlocks ? pvSvg([a, b], 2) : L >= 3 ? column(a, b, '+') : null;
-  return { skill: 'add', q: L >= 3 && !useBlocks ? null : `${a} + ${b}`, visual, speak: `${a} plus ${b}`, ans, distract: d, explain: useBlocks ? `${au} + ${bu} = ${au + bu} ones. Trade 10 ones for a ten. ${a} + ${b} = ${ans}` : explain };
+  return { skill: 'add', q: L >= 3 && !useBlocks ? null : `${a} + ${b}`, visual, speak: `${a} plus ${b}`, ans, distract: d, explain: useBlocks ? `${au} + ${bu} = ${pl(au + bu, 'one')}. Trade 10 ones for a ten. ${a} + ${b} = ${ans}` : explain };
 }
 function genSub(L) {
   let a, b;
@@ -310,9 +319,9 @@ function genArrays(L) {
   if (L === 4) {
     const r = rand(2, 5), c = rand(2, 6), N = r * c;
     return {
-      skill: 'arrays', story: `${N} dots are shared into ${r} equal rows. How many dots are in each row?`, visual: dots(r, c), ans: c,
+      skill: 'arrays', story: `${N} dots are arranged in ${r} equal rows. How many dots are in each row?`, visual: dots(r, c), ans: c,
       distract: [[r, 'picked the number of rows'], [N - r, 'took away instead of sharing'], [c + 1, 'counting slip'], [c - 1, 'counting slip']],
-      explain: `${r} × ${c} = ${N}, so ${N} shared into ${r} rows is ${c} in each row.`,
+      explain: `${r} × ${c} = ${N}, so ${N} dots in ${r} equal rows means ${c} in each row.`,
     };
   }
   const r = L === 1 ? rand(2, 5) : rand(3, 9), c = L === 1 ? rand(2, 5) : rand(4, 10), N = r * c;
@@ -661,7 +670,7 @@ function genPlace(L) {
     const d = L === 1
       ? [[o * 10 + t, 'mixed up tens and ones'], [t + o, 'counted blocks, not their values'], [n + 10, 'miscounted the tens'], [n - 10, 'miscounted the tens']]
       : [[t * 100 + h * 10 + o, 'mixed up hundreds and tens'], [h + t + o, 'counted blocks, not their values'], [n + 100, 'miscounted the hundreds'], [n + 10, 'miscounted the tens']];
-    return { skill: 'place', visual: pvSvg([n], L === 1 ? 2 : 3), ask: 'What number do the blocks show?', speak: 'What number do the blocks show? Count the hundreds, then the tens, then the ones.', ans: n, distract: d, explain: L === 1 ? `${t} tens and ${o} ones make ${n}.` : `${h} hundreds, ${t} tens and ${o} ones make ${n}.` };
+    return { skill: 'place', visual: pvSvg([n], L === 1 ? 2 : 3), ask: 'What number do the blocks show?', speak: 'What number do the blocks show? Count the hundreds, then the tens, then the ones.', ans: n, distract: d, explain: L === 1 ? `${pl(t, 'ten')} and ${pl(o, 'one')} make ${n}.` : `${pl(h, 'hundred')}, ${pl(t, 'ten')} and ${pl(o, 'one')} make ${n}.` };
   }
   if (L === 3) {
     let n; do { n = rand(102, 987); } while (new Set(String(n)).size < 3 || String(n).includes('0'));
@@ -672,7 +681,7 @@ function genPlace(L) {
   if (L === 4) {
     let h, t, o; do { h = rand(1, 9); t = rand(1, 9); o = rand(1, 9); } while (t === o || h === t);
     const n = h * 100 + t * 10 + o;
-    if (rng() < 0.5) return { skill: 'place', q: `${h * 100} + ${t * 10} + ${o}`, ask: 'What number is this?', speak: `${h * 100} plus ${t * 10} plus ${o}. What number is this?`, ans: n, distract: [[h + t + o, 'added the digits'], [h * 100 + o * 10 + t, 'mixed up tens and ones'], [h * 1000 + t * 10 + o, 'wrote each part in a row'], [n + 10, 'off by ten']], explain: `${h} hundreds, ${t} tens and ${o} ones make ${n}.` };
+    if (rng() < 0.5) return { skill: 'place', q: `${h * 100} + ${t * 10} + ${o}`, ask: 'What number is this?', speak: `${h * 100} plus ${t * 10} plus ${o}. What number is this?`, ans: n, distract: [[h + t + o, 'added the digits'], [h * 100 + o * 10 + t, 'mixed up tens and ones'], [h * 1000 + t * 10 + o, 'wrote each part in a row'], [n + 10, 'off by ten']], explain: `${pl(h, 'hundred')}, ${pl(t, 'ten')} and ${pl(o, 'one')} make ${n}.` };
     const ok = `${h * 100} + ${t * 10} + ${o}`;
     return { skill: 'place', q: String(n), ask: 'Which is the same number?', speak: `Which one is the same as ${n}?`, ans: ok, choices: [{ v: ok, ok: true }, { v: `${h} + ${t} + ${o}`, tag: 'added the digits' }, { v: `${h * 100} + ${o * 10} + ${t}`, tag: 'mixed up tens and ones' }, { v: `${h * 10} + ${t * 100} + ${o}`, tag: 'mixed up hundreds and tens' }], explain: `${n} = ${ok}` };
   }
@@ -685,7 +694,7 @@ function genPlace(L) {
   }
   const h = rand(1, 6), bigTens = rng() < 0.5, t = bigTens ? rand(10, 15) : rand(1, 8), o = bigTens ? rand(0, 9) : rand(10, 16);
   const n = h * 100 + t * 10 + o;
-  return { skill: 'place', visual: pvSvg(null, 3, [{ h, t, o }]), ask: 'What number do the blocks show?', speak: `${h} hundreds, ${t} tens and ${o} ones. What number is that?`, ans: n, distract: [[n - (bigTens ? 100 : 10), bigTens ? 'forgot to trade 10 tens for a hundred' : 'forgot to trade 10 ones for a ten'], [n + 100, 'miscounted the hundreds'], [n + 10, 'miscounted the tens'], [n - 1, 'counting slip']], explain: bigTens ? `${t} tens is 1 hundred and ${t - 10} tens. So ${h + 1} hundreds, ${t - 10} tens and ${o} ones make ${n}.` : `${o} ones is 1 ten and ${o - 10} ones. So ${h} hundreds, ${t + 1} tens and ${o - 10} ones make ${n}.` };
+  return { skill: 'place', visual: pvSvg(null, 3, [{ h, t, o }]), ask: 'What number do the blocks show?', speak: `${pl(h, 'hundred')}, ${pl(t, 'ten')} and ${pl(o, 'one')}. What number is that?`, ans: n, distract: [[n - (bigTens ? 100 : 10), bigTens ? 'forgot to trade 10 tens for a hundred' : 'forgot to trade 10 ones for a ten'], [n + 100, 'miscounted the hundreds'], [n + 10, 'miscounted the tens'], [n - 1, 'counting slip']], explain: bigTens ? `${pl(t, 'ten')} is 1 hundred and ${pl(t - 10, 'ten')}. So ${pl(h + 1, 'hundred')}, ${pl(t - 10, 'ten')} and ${pl(o, 'one')} make ${n}.` : `${pl(o, 'one')} is 1 ten and ${pl(o - 10, 'one')}. So ${pl(h, 'hundred')}, ${pl(t + 1, 'ten')} and ${pl(o - 10, 'one')} make ${n}.` };
 }
 function genPatterns(L) {
   if (L === 2) {
@@ -744,9 +753,9 @@ function genMeasure(L) {
     return { skill: 'measure', visual: rulerSvg(max, [{ start: 0, len: a, cls: 'pencil' }, { start: 0, len: b, cls: 'crayon' }]), ask: 'How much longer is the pencil than the crayon?', speak: `The pencil is on top. The crayon is below it. How much longer is the pencil than the crayon?`, ans: a - b, fmt, distract: [[a, "gave the pencil's length"], [a + b, 'added the lengths'], [b, "gave the crayon's length"]], explain: `${a} − ${b} = ${a - b}` };
   }
   const st = [
-    () => { const a = rand(25, 60), b = rand(11, a - 8); return { story: `${N()}'s paper boat floated ${a} feet down the stream. A friend's boat floated ${b} feet. How much farther did ${N()}'s boat float?`, ans: a - b, unit: 'feet', distract: [[a + b, 'added instead of taking away']] }; },
-    () => { const a = rand(12, 45), b = rand(12, 45); return { story: `A gnome walked ${a} meters to the mushroom ring, then ${b} meters to the stream. How far did the gnome walk?`, ans: a + b, unit: 'meters', distract: [[Math.abs(a - b), 'took away instead of adding']] }; },
-    () => { const a = rand(40, 90), b = rand(12, a - 15); return { story: `The ribbon was ${a} centimeters long. Mama cut off ${b} centimeters for a bookmark. How long is the ribbon now?`, ans: a - b, unit: 'cm', distract: [[a + b, 'added instead of taking away']] }; },
+    () => { const a = rand(25, 60), b = rand(11, a - 8); return { story: `${N()}'s paper boat floated ${a} feet down the stream. A friend's boat floated ${b} feet. How much farther did ${N()}'s boat float?`, ans: a - b, unit: 'feet', explain: `${a} − ${b} = ${a - b} feet`, distract: [[a + b, 'added instead of taking away']] }; },
+    () => { const a = rand(12, 45), b = rand(12, 45); return { story: `A gnome walked ${a} meters to the mushroom ring, then ${b} meters to the stream. How far did the gnome walk?`, ans: a + b, unit: 'meters', explain: `${a} + ${b} = ${a + b} meters`, distract: [[Math.abs(a - b), 'took away instead of adding']] }; },
+    () => { const a = rand(40, 90), b = rand(12, a - 15); return { story: `The ribbon was ${a} centimeters long. Mama cut off ${b} centimeters for a bookmark. How long is the ribbon now?`, ans: a - b, unit: 'cm', explain: `${a} − ${b} = ${a - b} cm`, distract: [[a + b, 'added instead of taking away']] }; },
   ];
   const p = pick(st)();
   p.distract.push([p.ans + 1, 'counting slip'], [p.ans - 1, 'counting slip'], [p.ans + 10, 'off by ten']);
@@ -777,7 +786,7 @@ function genShapes(L) {
   if (L === 2) {
     const n = pick([3, 4, 5, 6, 8]), ok = SHAPE_NAMES[n];
     const others = shuffle(Object.values(SHAPE_NAMES).filter(v => v !== ok)).slice(0, 3);
-    return { skill: 'shapes', visual: polygonSvg(n), ask: 'What is this shape called?', speak: 'What is this shape called?', ans: ok, choices: [{ v: ok, ok: true }, ...others.map(v => ({ v, tag: 'mixed up shape names' }))], explain: `It has ${n} sides, so it is a ${ok}.` };
+    return { skill: 'shapes', visual: polygonSvg(n), ask: 'What is this shape called?', speak: 'What is this shape called?', ans: ok, choices: [{ v: ok, ok: true }, ...others.map(v => ({ v, tag: 'mixed up shape names' }))], explain: `It has ${n} sides, so it is ${/^[aeiou]/.test(ok) ? 'an' : 'a'} ${ok}.` };
   }
   const k = pick([2, 3, 4]), kind = rng() < 0.5 ? 'circle' : 'rect', names = { 2: 'one half', 3: 'one third', 4: 'one fourth' };
   return { skill: 'shapes', visual: partsSvg(kind, k), ask: 'What part is shaded?', speak: 'What part of the shape is shaded?', ans: names[k], choices: [2, 3, 4].map(x => ({ v: names[x], ok: x === k, tag: 'mixed up halves, thirds and fourths' })), explain: `The shape is cut into ${k} equal parts and 1 is shaded: ${names[k]}.` };
@@ -815,7 +824,7 @@ function genNegatives(L) {
   }
   return { skill: 'negatives', q, ask, story, visual, speak, ans, neg: true, fmt: signed,
     distract: [[-ans, 'forgot the minus sign'], [ans + 1, 'counting slip'], [ans - 1, 'counting slip'], [0, 'stopped at zero'], [a + b, 'added instead']],
-    explain: ans < 0 ? `Count back past zero: ${signed(a)} ${L === 3 ? '+' : '−'} ${b} = ${signed(ans)}. Below zero is negative.` : `${signed(a)} + ${b} = ${ans}` };
+    explain: L === 3 ? `Start at ${signed(a)} and count up ${b}. You land on ${signed(ans)}.` : `Count back past zero: ${a} − ${b} = ${signed(ans)}. Below zero is negative.` };
 }
 
 function genBignums(L) {
@@ -823,7 +832,7 @@ function genBignums(L) {
     const n = rand(1001, 9999), th = Math.floor(n / 1000), h = Math.floor(n / 100) % 10, t = Math.floor(n / 10) % 10, o = n % 10;
     return { skill: 'bignums', visual: pvSvg(null, 4, [{ th, h, t, o }]), ask: 'What number do the blocks show?', speak: 'What number do the blocks show? A big cube is one thousand.', ans: n, fmt: commas,
       distract: [[th + h + t + o, 'counted blocks, not their values'], [h * 1000 + th * 100 + t * 10 + o, 'mixed up thousands and hundreds'], [n + 1000, 'miscounted the thousands'], [n + 100, 'miscounted the hundreds']],
-      explain: `${th} thousands, ${h} hundreds, ${t} tens and ${o} ones make ${commas(n)}.` };
+      explain: `${pl(th, 'thousand')}, ${pl(h, 'hundred')}, ${pl(t, 'ten')} and ${pl(o, 'one')} make ${commas(n)}.` };
   }
   if (L === 2 || L === 3) {
     const digits = L === 2 ? 4 : 6;
@@ -844,7 +853,7 @@ function genBignums(L) {
       explain: `Count the digits first. Then compare from the left, place by place.` };
   }
   const th = rand(1, 9), h = rand(0, 9), t = rand(0, 9), o = rand(1, 9), n = th * 1000 + h * 100 + t * 10 + o;
-  return { skill: 'bignums', ask: 'Listen! Which number did you hear?', speak: `Listen. ${n}. Which number did you hear?`, ans: n, fmt: commas,
+  return { skill: 'bignums', ask: 'Listen! Tap the speaker to hear it again.', speak: `Listen. ${n}. Which number did you hear?`, mustSpeak: true, printStory: `Find the number: ${numberWords(n)}.`, ans: n, fmt: commas,
     distract: [[th * 1000 + t * 100 + h * 10 + o, 'mixed up the places'], [th * 10000 + h * 100 + t * 10 + o, 'wrote too many zeros'], [th * 100 + h * 10 + t, 'left off a digit'], [n + 1000, 'misheard the thousands']],
     explain: `${commas(n)}: ${th} thousand, ${h} hundred${t || o ? ` and ${t * 10 + o}` : ''}.` };
 }
@@ -962,6 +971,8 @@ function buildSession() {
 function startSession() { sess = buildSession(); screen = 'play'; render(); autoSay(); }
 function autoSay() {
   const p = sess.probs[sess.i];
+  // listening problems speak even when read-aloud is off: hearing the number is the question
+  if (p.mustSpeak) { say(p.speak); return; }
   if (state.voice === 'off') return;
   const line = p.story || p.ask || state.voice === 'all' ? (p.speak || spoken(p.q || '')) : '';
   if (line) say(line);
@@ -1190,7 +1201,7 @@ function printRound() {
   const { probs } = buildSession();
   const writeIn = p => typeof p.ans === 'number' && !(p.fmt === cents && p.ans >= 100);
   const item = p => `<li class="pp">
-      <div class="pp-body">${p.story ? `<p class="story">${esc(p.story)}</p>` : ''}${p.q ? `<div class="q">${p.q}</div>` : ''}${p.visual || ''}${p.ask ? `<div class="ask">${esc(p.ask)}</div>` : ''}</div>
+      <div class="pp-body">${p.printStory ? `<p class="story">${esc(p.printStory)}</p>` : p.story ? `<p class="story">${esc(p.story)}</p>` : ''}${p.q ? `<div class="q">${p.q}</div>` : ''}${p.visual || ''}${p.ask ? `<div class="ask">${esc(p.ask)}</div>` : ''}</div>
       ${writeIn(p) ? `<div class="pp-write"><span class="pp-box"></span>${esc(unitOf(p))}</div>` : `<div class="pp-circle">Circle one: ${p.choices.map(c => `<span>${c.html || esc(p.fmt ? p.fmt(c.v) : c.v)}</span>`).join('')}</div>`}
     </li>`;
   document.getElementById('print').innerHTML = `

@@ -55,7 +55,7 @@ function genBonds(L) {
       const W = rng() < 0.5 ? 100 : rand(3, 9) * 10, a = rand(1, W / 10 - 1) * 10, b = W - a;
       return { ...base, visual: bondSvg(W, a, '?'), ask: `${a} and what make ${W}?`, speak: `${a} and what number make ${W}?`, ans: b,
         distract: [[W + a, 'added instead of finding the part'], [b + 10, 'off by ten'], [b - 10, 'off by ten'], [b / 10, 'counted tens instead of the number']].filter(d => d[0] > 0),
-        explain: `${a / 10} tens and ${b / 10} tens make ${W / 10} tens: ${a} + ${b} = ${W}.` };
+        explain: `${pl(a / 10, 'ten')} and ${pl(b / 10, 'ten')} make ${pl(W / 10, 'ten')}: ${a} + ${b} = ${W}.` };
     }
     case 6: { // break apart to add: tens with tens, ones with ones
       const a = rand(12, 69), b = rand(11, 29), at = a - a % 10, bt = b - b % 10, ao = a % 10, bo = b % 10;
@@ -63,7 +63,7 @@ function genBonds(L) {
       const kind = rand(0, 2);
       if (kind === 0) return { ...base, q: `${a} + ${b}`, visual: vis, ask: 'Add the tens first. What do the tens make?', speak: `${a} plus ${b}. Add the tens: ${at} plus ${bt}. What do they make?`, ans: at + bt,
         distract: [[a + b, 'gave the whole answer'], [ao + bo, 'added the ones instead'], [at + bt + 10, 'off by ten']], explain: `${at} + ${bt} = ${at + bt}.` };
-      if (kind === 1) return { ...base, q: `${a} + ${b}`, visual: vis, ask: 'Now add the ones. What do the ones make?', speak: `${a} plus ${b}. Add the ones: ${ao} plus ${bo}. What do they make?`, ans: ao + bo,
+      if (kind === 1) return { ...base, q: `${a} + ${b}`, visual: vis, ask: 'Add the ones. What do the ones make?', speak: `${a} plus ${b}. Add the ones: ${ao} plus ${bo}. What do they make?`, ans: ao + bo,
         distract: [[at + bt, 'added the tens instead'], [ao + bo + 1, 'counting slip'], [Math.abs(ao - bo), 'took away instead']], explain: `${ao} + ${bo} = ${ao + bo}.` };
       return { ...base, q: `${a} + ${b}`, visual: vis, ask: 'Tens plus tens, ones plus ones, then put them together.', speak: `${a} plus ${b}. Add the tens, add the ones, then put them together.`, ans: a + b,
         distract: [[at + bt + ao + bo - 10, 'forgot to carry'], [at + bt, 'forgot the ones'], [a + b + 10, 'off by ten']], explain: `${at} + ${bt} = ${at + bt}, ${ao} + ${bo} = ${ao + bo}, and ${at + bt} + ${ao + bo} = ${a + b}.` };
