@@ -407,3 +407,4 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .weak-chip[aria-pressed="true"] { border-color: var(--pink); background: rgba(242,167,184,.12); }
 .weak-chip[aria-pressed="true"] strong { color: var(--pink); }
 .weak-chip:disabled { opacity: .5; cursor: default; }
+.r-num.tape { font-size: 12px; }
