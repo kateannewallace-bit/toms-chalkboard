@@ -39,7 +39,7 @@ const SKILLS = {
   thinking: { name: 'Thinking problems', levels: ['Part and whole (to 10)', 'Find the missing part (to 20)', 'Which picture matches the story?', 'Comparing bars (to 50)', 'The balance scale', 'Letters for numbers (if a = 5)', 'Why does it work?', 'Two-step bar models', 'Balance with two mystery boxes', 'Equal-parts bars (× and ÷)', 'Two letters (a and b)', 'Three-part bars (to 100)'] },
   logic:    { name: 'Logic & puzzles', levels: ['Odd one out', 'Odd one out: trickier rules', 'True or false?', 'True or false: both sides', 'Compare sums: >, < or =', 'What is the rule?', "I'm thinking of a number", 'Sorting circles', 'Find the two numbers', 'Number pyramids', 'Shape puzzles'] },
   bonds:    { name: 'Number bonds', levels: ['Number bonds to 10', 'Number bonds to 20', 'Make 10 to add (8 + 5)', 'Subtract from 10 (13 − 8)', 'Bonds with tens (to 100)', 'Break apart to add (34 + 25)', 'Bridge to the next ten (47 + 8)', 'Unit bars (3 times as many)'] },
-  squares:  { name: 'Squares & roots', levels: ['Square numbers to 5 × 5', 'Square numbers to 10 × 10', 'Spot the square number', 'Square roots with blocks (to 10 × 10)', 'Odd numbers build squares', 'Square roots to 12 × 12', 'Squares to 15 × 15 (split into parts)', 'Square roots to 15 × 15', 'Squares to 19 × 19', 'Square roots to 19 × 19', '★ Root detective: the clues', '★ Root detective: solve it (to 30 × 30)'] },
+  squares:  { name: 'Squares & roots', levels: ['Square numbers to 5²', 'Square numbers to 10²', 'Spot the square number', 'Square roots with blocks (to √100)', 'Odd numbers build squares', 'Square roots to √144', 'Squares to 15² (split into parts)', 'Square roots to √225', 'Squares to 19²', 'Square roots to √361', '★ Root detective: the clues', '★ Root detective: solve it (to √900)'] },
   negatives: { name: 'Below zero',     levels: ['Frog jumps past zero', 'Take away past zero (3 − 5)', 'Start below zero (−4 + 6)', 'Cold-weather stories'] },
   bignums:  { name: 'Big numbers',     levels: ['Thousands blocks', 'Value of a digit to 9,999', 'Value of a digit to 999,999', 'Compare big numbers', 'Listen and find the number'] },
 };
@@ -49,6 +49,7 @@ const GROUPS = [
 ];
 const ORDER = Object.keys(SKILLS);
 const GOAL_SIZES = [25, 50, 100];
+const ROUND_SIZES = [10, 15, 20, 30];
 // The goal tally can follow any topic. Each topic keeps its own count, so switching goals loses nothing.
 const goalSkill = () => SKILLS[state.goal.skill] ? state.goal.skill : 'arrays';
 const goalDone = () => Math.max(0, (state.done[goalSkill()] || 0) - (state.goalBase[goalSkill()] || 0));
@@ -66,7 +67,7 @@ function defaultState() {
       villains: 'the Death Raccoon, Black Bigfoot, the Somalian Cave Witch, the gremlins, the Church Vampires',
       others: 'the Tailypo, the blue-eyed Tailypos',
     },
-    done: {}, goal: { skill: 'arrays', target: 50 }, goalBase: {}, total: 0, perSession: 10, voice: 'off', answerMode: 'choose', narrator: 'tr', updatedAt: 0,
+    done: {}, goal: { skill: 'arrays', target: 50 }, goalBase: {}, total: 0, perSession: 10, voice: 'off', storyTheme: 'all', storyHistory: [], weak: {}, answerMode: 'choose', narrator: 'tr', updatedAt: 0,
   };
 }
 function normalize(s) {
@@ -89,7 +90,7 @@ function normalize(s) {
   // older saves had an on/off read-aloud switch
   if (s.readAloud != null) { s.voice = s.readAloud ? 'all' : 'stories'; delete s.readAloud; }
   // rounds are now 10, 20 or 30 problems; read-aloud now starts off (applied once to older saves)
-  if (![10, 20, 30].includes(s.perSession)) s.perSession = s.perSession > 10 ? 20 : 10;
+  if (!ROUND_SIZES.includes(s.perSession)) s.perSession = s.perSession > 10 ? 20 : 10;
   if (raw.levels && !raw.quietDefault) s.voice = 'off';
   s.quietDefault = true;
   // older saves only counted arrays
@@ -144,7 +145,7 @@ async function pushRemote() {
   if (sync.dirty) { sync.dirty = false; pushRemote(); }
 }
 async function pullRemote() {
-  if (!sync.key) return;
+  if (!sync.key || inPractice()) return;
   try {
     const remote = await rpc('chalkboard_get', { p_key: sync.key });
     sync.status = 'ok'; sync.lastAt = Date.now(); sync.error = '';
@@ -166,7 +167,14 @@ function stopSync() {
   sync.code = ''; sync.key = ''; sync.status = 'off';
   try { localStorage.removeItem(CODE_KEY); } catch (e) {}
 }
-function save() { state.updatedAt = Date.now(); saveLocal(); pushRemote(); }
+// Practice mode plays on a copy of the main player's progress and never saves it.
+let mainState = null;
+const inPractice = () => !!mainState;
+function setPlayer(who) {
+  if (who === 'practice' && !mainState) { mainState = state; state = JSON.parse(JSON.stringify(state)); }
+  else if (who !== 'practice' && mainState) { state = mainState; mainState = null; }
+}
+function save() { if (inPractice()) return; state.updatedAt = Date.now(); saveLocal(); pushRemote(); }
 function initSync() {
   if (!syncAvailable) return;
   if (sync.code) startSync(sync.code);
@@ -375,8 +383,8 @@ function genMissing(L) {
 function genSquares(L) {
   const mostly = (lo, hi, oLo, oHi) => rng() < 0.7 ? rand(lo, hi) : rand(oLo, oHi);
   switch (L) {
-    case 1: return sqNumber(rand(2, 5));
-    case 2: return sqNumber(rand(2, 10));
+    case 1: return sqNumber(rand(2, 5), true);
+    case 2: return sqNumber(rand(2, 10), rng() < 0.5);
     case 3: return sqSpot();
     case 4: return sqRoot(rand(2, 10), 'blocks');
     case 5: return genOddSquares();
@@ -389,11 +397,11 @@ function genSquares(L) {
     default: return rootSolve();
   }
 }
-function sqNumber(n) {
+function sqNumber(n, hint) {
   return {
-    skill: 'squares', q: `${n} × ${n}`, visual: blocks(n), speak: `${n} times ${n}`, ans: n * n,
+    skill: 'squares', q: `${n}²`, visual: blocks(n), ask: hint ? `${n}² means ${n} × ${n}.` : 'What is the square?', speak: `${n} squared`, ans: n * n,
     distract: [[n * 2, 'doubled instead'], [n * n + n, 'one row too many'], [n * n - n, 'one row too few'], [n * n + 1, 'counting slip']],
-    explain: `${n} × ${n} = ${n * n}. ${n * n} makes a perfect square.`,
+    explain: `${n}² = ${n} × ${n} = ${n * n}. ${n * n} makes a perfect square.`,
   };
 }
 function sqSpot() {
@@ -403,7 +411,7 @@ function sqSpot() {
   return {
     skill: 'squares', ask: 'Which one is a square number?', speak: 'Which one is a square number? It can make a perfect square of blocks.', ans: sq,
     choices: [{ v: sq, ok: true }, ...wrong.map(v => ({ v, tag: 'picked a non-square' }))],
-    explain: `${sq} = ${n} × ${n}, so it makes a perfect square.`,
+    explain: `${sq} = ${n}² = ${n} × ${n}, so it makes a perfect square.`,
   };
 }
 function sqRoot(n, vis) {
@@ -414,16 +422,16 @@ function sqRoot(n, vis) {
     skill: 'squares', q: `√${sq}`, ask: vis === 'area' ? `This square has ${sq} blocks. How long is each side?` : `Which number times itself makes ${sq}?`,
     visual: vis === 'blocks' ? blocks(n) : vis === 'area' ? mysterySquare(sq) : null,
     speak: `What is the square root of ${sq}? Which number times itself makes ${sq}?`, ans: n, distract: d,
-    explain: `${n} × ${n} = ${sq}, so √${sq} = ${n}`,
+    explain: `${n}² = ${n} × ${n} = ${sq}, so √${sq} = ${n}`,
   };
 }
 // 13 × 13 as an area model: 10 × 10, 10 × 3, 3 × 10 and 3 × 3
 function sqBig(n) {
   const k = n - 10, sq = n * n;
   return {
-    skill: 'squares', q: `${n} × ${n}`, visual: areaSvg(n), ask: 'Add up the four parts.', speak: `${n} times ${n}. Split it into 10 and ${k}, then add up the four parts.`, ans: sq,
+    skill: 'squares', q: `${n}²`, visual: areaSvg(n), ask: `${n}² = ${n} × ${n}. Split it into parts and add them up.`, speak: `${n} squared. Split ${n} into 10 and ${k}, then add up the four parts.`, ans: sq,
     distract: [[100 + k * k, 'forgot the middle parts'], [100 + 10 * k + k * k, 'counted a middle part once'], [n * 2, 'doubled instead'], [sq + 10, 'off by ten'], [sq - 10, 'off by ten']],
-    explain: `10 × 10 = 100, 10 × ${k} = ${10 * k} twice, ${k} × ${k} = ${k * k}. 100 + ${10 * k} + ${10 * k} + ${k * k} = ${sq}`,
+    explain: `${n}² = 10 × 10 + 10 × ${k} + ${k} × 10 + ${k} × ${k} = 100 + ${10 * k} + ${10 * k} + ${k * k} = ${sq}`,
   };
 }
 function areaSvg(n) {
@@ -576,8 +584,18 @@ const cents = c => c >= 100 ? `$${(c / 100).toFixed(2)}` : `${c}¢`;
 
 // Big clock: thick short orange hour hand, thin long blue minute hand with an arrow tip,
 // a key underneath, and (for the early levels) a blue ring of minute numbers 0–55 outside the face.
-function clockSvg(h, m, minuteRing) {
-  const c = 160, R = minuteRing ? 112 : 140, P = (a, r) => [f1(c + Math.sin(a) * r), f1(c - Math.cos(a) * r)];
+// Big clock: thick short orange hour hand, thin long blue minute hand with an arrow tip,
+// a key underneath, and (for the early levels) a blue ring of minute numbers 0–55 outside the face.
+// setId: draw hands that can be dragged (set-the-clock problems). h === null: no hands (paper rounds).
+const CLOCK_C = 160, clockR = ring => ring ? 112 : 140;
+function handGeom(h, m, R) {
+  const c = CLOCK_C, P = (a, r) => [f1(c + Math.sin(a) * r), f1(c - Math.cos(a) * r)];
+  const ha = ((h % 12) + m / 60) * Math.PI / 6, ma = m * Math.PI / 30;
+  const [hx, hy] = P(ha, R * 0.48), [mx, my] = P(ma, R - 22), [tx, ty] = P(ma, R - 4), [l1x, l1y] = P(ma - 0.09, R - 24), [l2x, l2y] = P(ma + 0.09, R - 24);
+  return { hx, hy, mx, my, tip: `M${tx} ${ty}L${l1x} ${l1y}L${l2x} ${l2y}Z` };
+}
+function clockSvg(h, m, minuteRing, setId) {
+  const c = CLOCK_C, R = clockR(minuteRing), P = (a, r) => [f1(c + Math.sin(a) * r), f1(c - Math.cos(a) * r)];
   let s = '';
   if (minuteRing) {
     s += `<circle cx="${c}" cy="${c}" r="${R + 34}" class="ck-ring"/>`;
@@ -590,34 +608,68 @@ function clockSvg(h, m, minuteRing) {
   }
   let nums = '';
   for (let n = 1; n <= 12; n++) { const [x, y] = P(n * Math.PI / 6, R - 32); nums += `<text x="${x}" y="${+y + 9}" text-anchor="middle" class="ck-num">${n}</text>`; }
-  const ha = ((h % 12) + m / 60) * Math.PI / 6, ma = m * Math.PI / 30;
-  // hour hand: short and fat; minute hand: long and thin, ending in an arrow at the edge
-  const [hx, hy] = P(ha, R * 0.48), [mx, my] = P(ma, R - 22), [tx, ty] = P(ma, R - 4);
-  const [l1x, l1y] = P(ma - 0.09, R - 24), [l2x, l2y] = P(ma + 0.09, R - 24);
-  s += `<line x1="${c}" y1="${c}" x2="${hx}" y2="${hy}" class="ck-hour"/>`;
-  s += `<line x1="${c}" y1="${c}" x2="${mx}" y2="${my}" class="ck-min"/><path d="M${tx} ${ty}L${l1x} ${l1y}L${l2x} ${l2y}Z" class="ck-min-tip"/>`;
+  if (h !== null) {
+    const g = handGeom(h, m, R), id = k => setId ? ` id="ck-${k}"` : '';
+    s += `<line${id('h')} x1="${c}" y1="${c}" x2="${g.hx}" y2="${g.hy}" class="ck-hour"/>`;
+    s += `<line${id('m')} x1="${c}" y1="${c}" x2="${g.mx}" y2="${g.my}" class="ck-min"/><path${id('tip')} d="${g.tip}" class="ck-min-tip"/>`;
+  }
   s += `<circle cx="${c}" cy="${c}" r="9" class="ck-pin"/>` + nums;
-  return `<div class="clock-wrap"><svg class="clock" viewBox="0 0 320 320" width="440" role="img" aria-label="clock">${s}</svg>
+  return `<div class="clock-wrap"><svg class="clock ${setId ? 'set-clock' : ''}" viewBox="0 0 320 320" width="440" role="img" aria-label="clock">${s}</svg>
     <div class="clock-key"><span><i class="k-hour"></i>Short hand: hour</span><span><i class="k-min"></i>Long hand: minutes</span></div></div>`;
 }
-
-function rulerSvg(max, objs) {
-  const U = Math.min(34, Math.floor(440 / max)), x0 = 18, W = x0 * 2 + max * U, objH = 18;
-  let s = '', y = 6;
-  const ry = 6 + objs.length * (objH + 12) + 8, RH = 46;
-  for (const o of objs) {
-    const x = x0 + o.start * U, w = o.len * U, tip = Math.min(14, w / 3);
-    s += `<rect x="${x}" y="${y}" width="${w - tip}" height="${objH}" rx="3" class="obj ${o.cls}"/><path d="M${x + w - tip} ${y}L${x + w} ${y + objH / 2}L${x + w - tip} ${y + objH}Z" class="obj ${o.cls} tip"/>`;
-    s += `<line x1="${x}" y1="${y + objH}" x2="${x}" y2="${ry}" class="guide"/><line x1="${x + w}" y1="${y + objH / 2}" x2="${x + w}" y2="${ry}" class="guide"/>`;
-    y += objH + 12;
-  }
-  s += `<rect x="4" y="${ry}" width="${W - 8}" height="${RH}" rx="4" class="ruler"/>`;
-  for (let i = 0; i <= max; i++) {
-    const x = x0 + i * U;
-    s += `<line x1="${x}" y1="${ry}" x2="${x}" y2="${ry + 16}" class="r-tick"/><text x="${x}" y="${ry + 36}" text-anchor="middle" class="r-num">${i}</text>`;
-  }
-  return `<svg class="rulerv" viewBox="0 0 ${W} ${ry + RH + 2}" width="${W}" role="img" aria-label="ruler">${s}</svg>`;
+// Set-the-clock problems: drag the hands (or use the arrows), then Check.
+function setClockHtml(p) {
+  const ctrls = p.done ? '' : `<div class="set-clock-ctrls">
+      <div class="row-btns"><span>Short hand</span><button class="key-btn small" data-act="ck" data-hand="h" data-d="-1" aria-label="Short hand back">◀</button><button class="key-btn small" data-act="ck" data-hand="h" data-d="1" aria-label="Short hand forward">▶</button></div>
+      <div class="row-btns"><span>Long hand</span><button class="key-btn small" data-act="ck" data-hand="m" data-d="-1" aria-label="Long hand back">◀</button><button class="key-btn small" data-act="ck" data-hand="m" data-d="1" aria-label="Long hand forward">▶</button></div>
+      <button class="start check" data-act="ck-check">Check</button></div>`;
+  return `<div class="set-clock-box">${clockSvg(p.setH, p.setM, p.ring, true)}${p.done ? '' : '<p class="note">Drag the long hand near the edge, the short hand near the middle.</p>'}${ctrls}</div>`;
 }
+function moveHand(hand, d) {
+  const p = sess.probs[sess.i];
+  if (p.done) return;
+  if (hand === 'm') p.setM = (p.setM + 5 * d + 60) % 60;
+  else p.setH = ((p.setH - 1 + d + 12) % 12) + 1;
+  render();
+}
+function updateHands(svg, p) {
+  const g = handGeom(p.setH, p.setM, clockR(p.ring));
+  const h = svg.querySelector('#ck-h'), m = svg.querySelector('#ck-m'), tip = svg.querySelector('#ck-tip');
+  h.setAttribute('x2', g.hx); h.setAttribute('y2', g.hy); m.setAttribute('x2', g.mx); m.setAttribute('y2', g.my); tip.setAttribute('d', g.tip);
+}
+function bindSetClock() {
+  const svg = document.querySelector('svg.set-clock');
+  if (!svg || screen !== 'play') return;
+  const p = sess.probs[sess.i];
+  if (p.done) return;
+  let hand = null;
+  const pos = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; const q = pt.matrixTransform(svg.getScreenCTM().inverse()); return { x: q.x - CLOCK_C, y: q.y - CLOCK_C }; };
+  const angle = q => (Math.atan2(q.x, -q.y) * 180 / Math.PI + 360) % 360;
+  const move = e => {
+    if (!hand) return;
+    const a = angle(pos(e));
+    if (hand === 'm') p.setM = (Math.round(a / 30) * 5) % 60;
+    else { const hh = ((Math.round(a / 30 - p.setM / 60) % 12) + 12) % 12; p.setH = hh === 0 ? 12 : hh; }
+    updateHands(svg, p);
+  };
+  svg.addEventListener('pointerdown', e => { const q = pos(e); hand = Math.hypot(q.x, q.y) < clockR(p.ring) * 0.55 ? 'h' : 'm'; svg.setPointerCapture(e.pointerId); move(e); e.preventDefault(); });
+  svg.addEventListener('pointermove', move);
+  const end = () => { hand = null; };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+}
+function checkClock() {
+  const p = sess.probs[sess.i];
+  if (p.done) return;
+  const okH = p.setH % 12 === p.target.h % 12, okM = p.setM === p.target.m;
+  if (okH && okM) { gotIt(p); render(); return; }
+  const swapped = p.setH % 12 === (p.target.m / 5) % 12 && p.setM === (p.target.h % 12) * 5;
+  const tag = swapped ? 'mixed up the hands' : okM ? 'set the wrong hour' : okH ? 'set the wrong minutes' : 'set both hands wrong';
+  missed(p, tag, okM ? 'The long hand is right. Check the short hand.' : okH ? 'The short hand is right. Check the long hand.' : 'Not quite. Have another look.');
+  if (p.revealed) { p.setH = p.target.h; p.setM = p.target.m; }
+  render();
+}
+
 
 const GRAPH_SETS = [
   { title: 'Fruit in the basket', cats: ['apples', 'pears', 'plums', 'cherries'], noun: 'pieces of fruit' },
@@ -738,29 +790,15 @@ function genTime(L) {
   const seen = new Set([ok]), choices = [{ v: ok, ok: true }];
   for (const [v, tag] of cand) if (!seen.has(v) && choices.length < 4) { seen.add(v); choices.push({ v, tag }); }
   const said = m === 0 ? `${((h - 1) % 12) + 1} o'clock` : m === 30 ? `half past ${h}` : m === 15 ? `quarter past ${h}` : m === 45 ? `quarter to ${(h % 12) + 1}` : ok;
-  return { skill: 'time', visual: clockSvg(h, m, L <= 3), ask: 'What time is it?', speak: 'What time does the clock show? The short hand shows the hour.', ans: ok, choices, explain: `The short hand points ${m ? 'past' : 'to'} ${h}, and the long hand points to ${m === 0 ? '12' : m / 5}. It is ${ok}${said !== ok ? ` (${said})` : ''}.` };
-}
-function genMeasure(L) {
-  const unit = rng() < 0.6 ? 'cm' : 'inches', fmt = v => `${v} ${unit === 'cm' ? 'cm' : v === 1 ? 'inch' : 'inches'}`;
-  if (L === 1 || L === 2) {
-    const max = unit === 'cm' ? 13 : 10, len = rand(2, L === 1 ? max - 1 : max - 4), start = L === 1 ? 0 : rand(1, max - len);
-    const d = [[len + 1, 'counted the tick marks'], [len - 1, 'counting slip']];
-    if (start) d.unshift([start + len, 'read the end number without checking the start']);
-    return { skill: 'measure', visual: rulerSvg(max, [{ start, len, cls: 'pencil' }]), ask: 'How long is the pencil?', speak: `How long is the pencil, in ${unit === 'cm' ? 'centimeters' : 'inches'}?${start ? ' Look where it starts.' : ''}`, ans: len, fmt, distract: d, explain: start ? `It starts at ${start} and ends at ${start + len}. ${start + len} − ${start} = ${len}` : `It starts at 0 and ends at ${len}.` };
+  if (rng() < 0.4) {
+    const hr = ((h - 1) % 12) + 1, startH = hr === 12 && m === 0 ? 6 : 12;
+    return { skill: 'time', sub: 'set', interactive: 'clock', target: { h: hr, m }, setH: startH, setM: 0, ring: L <= 3,
+      printVisual: clockSvg(null, 0, L <= 3), ask: `Show ${ok} on the clock.`, speak: `Move the clock hands to show ${said}.`, ans: ok, choices: [{ v: ok, ok: true }],
+      explain: `For ${ok}, the long hand points to ${m === 0 ? 12 : m / 5} and the short hand points ${m ? 'just past' : 'to'} ${hr}.` };
   }
-  if (L === 3) {
-    const max = unit === 'cm' ? 13 : 10, a = rand(5, max), b = rand(2, a - 1);
-    return { skill: 'measure', visual: rulerSvg(max, [{ start: 0, len: a, cls: 'pencil' }, { start: 0, len: b, cls: 'crayon' }]), ask: 'How much longer is the pencil than the crayon?', speak: `The pencil is on top. The crayon is below it. How much longer is the pencil than the crayon?`, ans: a - b, fmt, distract: [[a, "gave the pencil's length"], [a + b, 'added the lengths'], [b, "gave the crayon's length"]], explain: `${a} − ${b} = ${a - b}` };
-  }
-  const st = [
-    () => { const a = rand(25, 60), b = rand(11, a - 8); return { story: `${N()}'s paper boat floated ${a} feet down the stream. A friend's boat floated ${b} feet. How much farther did ${N()}'s boat float?`, ans: a - b, unit: 'feet', explain: `${a} − ${b} = ${a - b} feet`, distract: [[a + b, 'added instead of taking away']] }; },
-    () => { const a = rand(12, 45), b = rand(12, 45); return { story: `A gnome walked ${a} meters to the mushroom ring, then ${b} meters to the stream. How far did the gnome walk?`, ans: a + b, unit: 'meters', explain: `${a} + ${b} = ${a + b} meters`, distract: [[Math.abs(a - b), 'took away instead of adding']] }; },
-    () => { const a = rand(40, 90), b = rand(12, a - 15); return { story: `The ribbon was ${a} centimeters long. Mama cut off ${b} centimeters for a bookmark. How long is the ribbon now?`, ans: a - b, unit: 'cm', explain: `${a} − ${b} = ${a - b} cm`, distract: [[a + b, 'added instead of taking away']] }; },
-  ];
-  const p = pick(st)();
-  p.distract.push([p.ans + 1, 'counting slip'], [p.ans - 1, 'counting slip'], [p.ans + 10, 'off by ten']);
-  return Object.assign({ skill: 'measure', speak: p.story, fmt: v => `${v} ${p.unit}`, explain: `${p.ans} ${p.unit}` }, p);
+  return { skill: 'time', sub: 'read', visual: clockSvg(h, m, L <= 3), ask: 'What time is it?', speak: 'What time does the clock show? The short hand shows the hour.', ans: ok, choices, explain: `The short hand points ${m ? 'past' : 'to'} ${h}, and the long hand points to ${m === 0 ? '12' : m / 5}. It is ${ok}${said !== ok ? ` (${said})` : ''}.` };
 }
+// genMeasure lives in measure.js
 function genGraphs(L) {
   const set = pick(GRAPH_SETS);
   let vals; do { vals = set.cats.map(() => rand(1, L === 1 ? 8 : 10)); } while (new Set(vals).size < 3);
@@ -868,7 +906,7 @@ function genOddSquares() {
   const n = rand(2, 7), odds = Array.from({ length: n }, (_, i) => 2 * i + 1), sq = n * n;
   return { skill: 'squares', q: `${odds.join(' + ')}`, visual: layersSvg(n), ask: 'Add them up. What do you notice?', speak: `${odds.join(' plus ')}. What do they add up to?`, ans: sq,
     distract: [[sq + 1, 'counting slip'], [sq - 1, 'counting slip'], [sq + n, 'one row too many'], [2 * n + 1, 'added only the last two']],
-    explain: `${odds.join(' + ')} = ${sq}, which is ${n} × ${n}. Adding odd numbers in order always builds a square!` };
+    explain: `${odds.join(' + ')} = ${sq}, which is ${n}². Adding odd numbers in order always builds a square!` };
 }
 
 /* ---------- off the screen: hands-on ideas matched to what was practiced ---------- */
@@ -945,16 +983,21 @@ function dueCards() {
   return state.cards.filter(c => c.due <= now && SKILLS[c.skill]).sort((a, b) => a.due - b.due);
 }
 function buildSession() {
-  storyMemory.clear();
   let on = ORDER.filter(k => state.on[k]);
-  if (!on.length) on = ['times'];
+  const weakOn = state.on.weak && weakList().length > 0;
+  if (!on.length && !weakOn) on = ['times'];
   const n = state.perSession, plan = [];
   for (const c of dueCards().slice(0, Math.ceil(n * 0.3))) plan.push({ skill: c.skill, level: c.level, seed: c.box === 0 ? c.seed : newSeed(), kind: 'again', card: c.id });
   let rotation = shuffle(on.filter(k => !state.mastered[k] || Math.random() < 0.5));
   if (!rotation.length) rotation = shuffle(on);
   if (on.includes(goalSkill()) && on.length > 1 && !goalMet()) rotation.push(goalSkill());
+  // Weak spots on: about half of a mixed round, or the whole round if it's the only thing on
+  if (weakOn) rotation = on.length ? shuffle([...rotation, ...rotation.map(() => '__weak')]) : ['__weak'];
+  let lastWeak = null;
   for (let i = 0; plan.length < n; i++) {
-    const k = rotation[i % rotation.length], L = state.levels[k], max = SKILLS[k].levels.length, roll = Math.random();
+    const k = rotation[i % rotation.length];
+    if (k === '__weak') { const w = pickWeak(lastWeak) || pickWeak(); if (w) { plan.push({ skill: w.skill, level: w.level, kind: 'weak', weakKey: w.key, sub: w.sub }); lastWeak = w.key; } else if (!on.length) break; continue; }
+    const L = state.levels[k], max = SKILLS[k].levels.length, roll = Math.random();
     if (roll < 0.15 && L > 1) plan.push({ skill: k, level: L - 1 - (L > 2 && Math.random() < 0.3 ? 1 : 0), kind: 'easier' });
     else if (roll > 0.89 && L < max && readyToStretch(k)) plan.push({ skill: k, level: L + 1, kind: 'stretch' });
     else plan.push({ skill: k, level: L, kind: 'current' });
@@ -962,8 +1005,9 @@ function buildSession() {
   const seen = new Set(), probs = [];
   for (const it of shuffle(plan)) {
     let p = makeProblem(it.skill, it.level, it.seed ?? newSeed(), it.kind);
-    for (let tries = 0; seen.has(p.key) && tries < 8; tries++) p = makeProblem(it.skill, it.level, newSeed(), it.kind);
-    p.card = it.card;
+    // a weak spot is a type of problem: keep trying until the new version is that same type
+    for (let tries = 0; (seen.has(p.key) || (it.sub && p.sub !== it.sub)) && tries < 30; tries++) p = makeProblem(it.skill, it.level, newSeed(), it.kind);
+    p.card = it.card; p.weakKey = it.weakKey;
     seen.add(p.key); probs.push(p);
   }
   return { probs, i: 0, results: [], cleared: 0 };
@@ -1032,8 +1076,29 @@ function keypadHtml(p) {
     <button class="start check" data-act="key" data-k="ok">Check</button></div>`}
   </div>`;
 }
+/* Weak spots: every kind of problem missed (topic + level + type) becomes a weak spot. The Weak spots
+   topic serves fresh versions of them (same type, new numbers and story). A weak spot clears after
+   3 first-try rights in a row, and new misses add new ones, so the list keeps tracking what needs work. */
+const WEAK_CLEAR = 3;
+const weakKey = p => `${p.skill}|${p.level}|${p.sub || ''}`;
+const weakList = () => Object.entries(state.weak || {}).map(([key, w]) => ({ key, ...w })).filter(w => SKILLS[w.skill]);
+function noteWeak(p, first) {
+  if (p.kind === 'stretch') return;
+  state.weak = state.weak || {};
+  const key = p.weakKey || weakKey(p), w = state.weak[key];
+  if (!first) { state.weak[key] = { skill: p.skill, level: p.level, sub: p.sub || '', misses: (w ? w.misses : 0) + 1, streak: 0, last: Date.now() }; return; }
+  if (w) { w.streak++; w.last = Date.now(); if (w.streak >= WEAK_CLEAR) { delete state.weak[key]; if (sess) sess.weakCleared = (sess.weakCleared || 0) + 1; } }
+}
+function pickWeak(skip) {
+  const list = weakList().filter(w => SKILLS[w.skill] && w.key !== skip);
+  if (!list.length) return null;
+  // more misses and longer since practiced come first
+  list.sort((a, b) => (b.misses - b.streak) - (a.misses - a.streak) || a.last - b.last);
+  return pick(list.slice(0, 3));
+}
 function record(p, first) {
   sess.results.push(first);
+  noteWeak(p, first);
   state.total++;
   state.done[p.skill] = (state.done[p.skill] || 0) + 1;
   if (p.kind === 'current') state.rec[p.skill] = [...(state.rec[p.skill] || []), first].slice(-10);
@@ -1091,7 +1156,7 @@ function adjustLevels(used) {
 }
 
 /* ---------- rendering ---------- */
-const KIND_LABEL = { again: ' · <b class="tag again">Practice again</b>', easier: ' · <b class="tag easier">Review</b>', stretch: ' · <b class="tag stretch">★ Stretch</b>' };
+const KIND_LABEL = { weak: ' · <b class="tag again">Weak spot</b>', again: ' · <b class="tag again">Practice again</b>', easier: ' · <b class="tag easier">Review</b>', stretch: ' · <b class="tag stretch">★ Stretch</b>' };
 const app = document.getElementById('app');
 const speakerIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19.5 5.5a9 9 0 0 1 0 13"/></svg>';
 function tallySvg(filled) {
@@ -1131,6 +1196,35 @@ function levelBar(k) {
   return `<span class="lvlbar ${state.mastered[k] ? 'done' : ''}" role="img" aria-label="Level ${L} of ${max}${state.mastered[k] ? ', mastered' : ''}">${segs}</span>`;
 }
 
+const SUB_NAMES = {
+  add: 'adding stories', sub: 'taking-away stories', more: '"how many more" stories', need: '"how many are needed" stories', groups: 'groups stories',
+  share: 'sharing stories', groupsPlus: 'two-step stories (groups)', addSub: 'two-step stories', read: 'reading the clock', set: 'setting the clock',
+  long: 'measuring length', 'long-offset': 'rulers that don’t start at 0', tall: 'measuring height', around: 'measuring around', 'compare-long': 'comparing lengths', 'compare-tall': 'comparing heights', story: 'measuring stories',
+};
+function weakChip() {
+  const n = weakList().length;
+  return `<div class="group"><h3>Weak spots <small>Fresh versions of problems ${esc(childName() || 'your child')} has missed</small></h3>
+    <div class="chips"><button class="chip weak-chip" data-act="chip" data-k="weak" aria-pressed="${!!state.on.weak && n > 0}" ${n ? '' : 'disabled'}><strong>Weak spots</strong><small>${n ? `${n} to work on` : 'None right now'}</small></button></div></div>`;
+}
+function renderWeak() {
+  const list = weakList().sort((a, b) => (b.misses - b.streak) - (a.misses - a.streak));
+  return `<section>
+    <h2>Weak spots</h2>
+    <p class="note">Every kind of problem missed becomes a weak spot. Turning on Weak spots on the home screen mixes in fresh versions: the same kind of problem with new numbers and a new story. A weak spot clears after ${WEAK_CLEAR} right in a row.</p>
+    ${list.length ? `<ul class="list">${list.slice(0, 15).map(w => `<li><span>${SKILLS[w.skill].name} · ${esc(SKILLS[w.skill].levels[w.level - 1] || '')}${w.sub && SUB_NAMES[w.sub] ? ` · ${SUB_NAMES[w.sub]}` : ''}</span><span>missed ${w.misses}× · ${WEAK_CLEAR - w.streak} more right to clear</span></li>`).join('')}</ul>` : '<p class="note">No weak spots right now.</p>'}
+  </section>`;
+}
+
+function playerMenu() {
+  return `<label class="player-pick"><span class="sr">Player</span><select id="player" class="pick">
+    <option value="main" ${inPractice() ? '' : 'selected'}>${esc(childName() || 'Main player')}</option>
+    <option value="practice" ${inPractice() ? 'selected' : ''}>Practice (nothing saved)</option></select></label>`;
+}
+// The Story problems button gets a theme menu above it
+function storyThemeMenu() {
+  return `<label class="theme-pick"><span>Story theme</span><select id="story-theme" class="pick">${STORY_THEMES().map(([k, n]) => `<option value="${k}" ${k === (state.storyTheme || 'all') ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>`;
+}
+
 function renderHome() {
   const gk = goalSkill(), target = state.goal.target, done = Math.min(goalDone(), target);
   let tally = '';
@@ -1138,7 +1232,9 @@ function renderHome() {
   const today = new Date().toDateString();
   const todayCount = state.sessions.filter(s => new Date(s.d).toDateString() === today).reduce((t, s) => t + s.n, 0);
   return `
-  <header class="top"><h1>${esc(greet('Hello'))}</h1><button class="link" data-act="parent">For grown-ups</button></header>
+  <header class="top"><h1>${esc(greet('Hello'))}</h1>
+    <div class="top-right">${playerMenu()}<button class="link" data-act="parent">For grown-ups</button></div></header>
+  ${inPractice() ? `<p class="practice-note">Practice mode: these rounds use ${esc(childName() || 'the main player')}'s levels, but nothing is saved.</p>` : ''}
   ${childName() ? '' : nameForm("Who's practicing?", 'Start')}
   <section>
     <div class="goal-head">
@@ -1150,10 +1246,12 @@ function renderHome() {
   </section>
   <section>
     <h2>What shall we practice?</h2>
+    ${weakChip()}
     ${GROUPS.map(g => `<div class="group"><h3>${g.title}${g.note ? ` <small>${g.note}</small>` : ''}</h3>
-    <div class="chips">${g.keys.map(k => `<button class="chip" data-act="chip" data-k="${k}" aria-pressed="${!!state.on[k]}"><strong>${SKILLS[k].name}</strong><small>Level ${state.levels[k]} · ${esc(SKILLS[k].levels[state.levels[k] - 1])}</small>${levelBar(k)}</button>`).join('')}</div></div>`).join('')}
+    <div class="chips">${g.keys.map(k => { const chip = `<button class="chip" data-act="chip" data-k="${k}" aria-pressed="${!!state.on[k]}"><strong>${SKILLS[k].name}</strong><small>Level ${state.levels[k]} · ${esc(SKILLS[k].levels[state.levels[k] - 1])}</small>${levelBar(k)}</button>`; return k === 'words' ? `<div class="chip-stack">${storyThemeMenu()}${chip}</div>` : chip; }).join('')}</div></div>`).join('')}
   </section>
   <button class="start" data-act="start">Start ${state.perSession} problems</button>
+  <div class="row-btns round-size"><span>Problems in a batch</span><div class="seg">${ROUND_SIZES.map(n => `<button data-act="per" data-n="${n}" aria-pressed="${state.perSession === n}">${n}</button>`).join('')}</div></div>
   <p class="meta">${todayCount ? `${todayCount} problems so far today. ` : ''}${state.total} problems solved since the start.</p>`;
 }
 
@@ -1182,7 +1280,7 @@ function renderPlay() {
     ${p.visual || ''}
     ${p.ask ? `<div class="ask">${esc(p.ask)}</div>` : ''}
   </div>
-  ${typeable(p) ? keypadHtml(p) : `<div class="choices ${p.wordy ? 'wordy' : ''} ${p.pics ? 'pics' : ''}">${choices}</div>`}
+  ${p.interactive === 'clock' ? setClockHtml(p) : typeable(p) ? keypadHtml(p) : `<div class="choices ${p.wordy ? 'wordy' : ''} ${p.pics ? 'pics' : ''}">${choices}</div>`}
   <div class="feedback">${fb}</div>
   ${p.done ? `<div class="next-row"><button class="start" data-act="next" id="next">${last ? 'See my stars' : 'Next'}</button></div>` : ''}
   <button class="link" data-act="home" style="align-self:flex-start">Stop and go home</button>`;
@@ -1201,8 +1299,8 @@ function printRound() {
   const { probs } = buildSession();
   const writeIn = p => typeof p.ans === 'number' && !(p.fmt === cents && p.ans >= 100);
   const item = p => `<li class="pp">
-      <div class="pp-body">${p.printStory ? `<p class="story">${esc(p.printStory)}</p>` : p.story ? `<p class="story">${esc(p.story)}</p>` : ''}${p.q ? `<div class="q">${p.q}</div>` : ''}${p.visual || ''}${p.ask ? `<div class="ask">${esc(p.ask)}</div>` : ''}</div>
-      ${writeIn(p) ? `<div class="pp-write"><span class="pp-box"></span>${esc(unitOf(p))}</div>` : `<div class="pp-circle">Circle one: ${p.choices.map(c => `<span>${c.html || esc(p.fmt ? p.fmt(c.v) : c.v)}</span>`).join('')}</div>`}
+      <div class="pp-body">${p.printStory ? `<p class="story">${esc(p.printStory)}</p>` : p.story ? `<p class="story">${esc(p.story)}</p>` : ''}${p.q ? `<div class="q">${p.q}</div>` : ''}${p.printVisual || p.visual || ''}${p.ask ? `<div class="ask">${esc(p.interactive ? p.ask.replace('Show', 'Draw the hands to show') : p.ask)}</div>` : ''}</div>
+      ${p.interactive ? '' : writeIn(p) ? `<div class="pp-write"><span class="pp-box"></span>${esc(unitOf(p))}</div>` : `<div class="pp-circle">Circle one: ${p.choices.map(c => `<span>${c.html || esc(p.fmt ? p.fmt(c.v) : c.v)}</span>`).join('')}</div>`}
     </li>`;
   document.getElementById('print').innerHTML = `
     <header class="pp-head"><h1>${childName() ? esc(childName()) + "'s paper round" : 'Paper round'}</h1><span>${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span></header>
@@ -1218,6 +1316,7 @@ function roundNews() {
   const lines = [];
   if (unlocked.length) lines.push(...unlocked.map(([k]) => `<li class="big-news">New topic unlocked: <strong>${SKILLS[k].name}</strong>!</li>`));
   if (mastered.length) lines.push(...mastered.map(([k]) => `<li>${SKILLS[k].name}: top level mastered. It will still come back now and then.</li>`));
+  if (sess.weakCleared) lines.push(`<li>Weak spots cleared: ${sess.weakCleared}. Great work!</li>`);
   if (stretch.length) lines.push(`<li>★ Stretch problems: ${stretchRight} of ${stretch.length} right.</li>`);
   if (again.length) lines.push(`<li>Practiced again from earlier days: ${againRight} of ${again.length} right${sess.cleared ? `, and ${sess.cleared} ${sess.cleared === 1 ? 'is' : 'are'} learned for good` : ''}.</li>`);
   return lines.length ? `<section><h2>This round</h2><ul class="ups">${lines.join('')}</ul></section>` : '';
@@ -1282,7 +1381,7 @@ function renderDone() {
     <div class="done-text">
       <h1>${esc(head)}</h1>
       ${line ? `<p class="cheer">${esc(line)}</p>` : ''}
-      <p class="meta">${score} of ${n} right on the first try.</p>
+      <p class="meta">${score} of ${n} right on the first try.${inPractice() ? ' <b class="tag easier">Practice round: not saved</b>' : ''}</p>
       <div class="stars">${sess.results.map(starSvg).join('')}</div>
     </div>
   </div>
@@ -1312,7 +1411,7 @@ function renderParent() {
     ${nameForm("Child's name", 'Save')}
     <div class="row-btns"><span>Answers</span><div class="seg"><button data-act="mode" data-v="choose" aria-pressed="${state.answerMode !== 'type'}">Pick from four</button><button data-act="mode" data-v="type" aria-pressed="${state.answerMode === 'type'}">Type the number</button></div></div>
     <p class="note">Typing tests real recall and gives practice writing numerals. Problems whose answer is a word, a time or a sign still show choices.</p>
-    <div class="row-btns"><span>Problems per round</span><div class="seg">${[10, 20, 30].map(n => `<button data-act="per" data-n="${n}" aria-pressed="${state.perSession === n}">${n}</button>`).join('')}</div></div>
+    <div class="row-btns"><span>Problems per round</span><div class="seg">${ROUND_SIZES.map(n => `<button data-act="per" data-n="${n}" aria-pressed="${state.perSession === n}">${n}</button>`).join('')}</div></div>
     <div class="row-btns"><span>End-of-round cheer</span><div class="seg"><button data-act="narr" data-v="tr" aria-pressed="${tr()}">Colonel Roosevelt</button><button data-act="narr" data-v="plain" aria-pressed="${!tr()}">Plain</button></div></div>
     ${canSpeak ? `<div class="row-btns"><label for="voice">Voice</label>
       <select id="voice" class="pick">${['', ...voices.map(v => v.name)].map(nm => `<option value="${esc(nm)}" ${nm === savedVoiceName() ? 'selected' : ''}>${nm ? esc(nm) : `Automatic${chosenVoice() ? ` (${esc(chosenVoice().name)})` : ''}`}</option>`).join('')}</select>
@@ -1321,6 +1420,7 @@ function renderParent() {
     <div class="row-btns"><span>Read aloud</span><div class="seg">${[['all', 'Every problem'], ['stories', 'Stories only'], ['off', 'Off']].map(([v, t]) => `<button data-act="read" data-v="${v}" aria-pressed="${state.voice === v}">${t}</button>`).join('')}</div></div>
     <p class="note">${state.voice === 'off' ? 'Nothing is read out on its own. The speaker button still reads a problem when tapped.' : state.voice === 'stories' ? 'Story problems and instructions are read out. Plain number problems stay quiet.' : 'Every problem is read out when it appears.'}</p>
   </section>
+  ${renderWeak()}
   ${renderStories()}
   ${renderReview()}
   <section>
@@ -1364,6 +1464,7 @@ function resetTopic(k) {
   state.done[k] = 0; state.goalBase[k] = 0;
   state.cards = state.cards.filter(c => c.skill !== k);
   for (const key of Object.keys(state.slips)) if (key.startsWith(k + '|')) delete state.slips[key];
+  for (const key of Object.keys(state.weak || {})) if (key.startsWith(k + '|')) delete state.weak[key];
 }
 
 function renderStories() {
@@ -1429,6 +1530,7 @@ function render(shake) {
   app.innerHTML = screen === 'play' ? renderPlay() : screen === 'done' ? renderDone() : screen === 'parent' ? renderParent() : renderHome();
   if (shake) { const el = document.querySelector('.choices'); el && el.classList.add('shake'); }
   if (screen === 'play' && sess.probs[sess.i].done) document.getElementById('next')?.focus();
+  if (screen === 'play') bindSetClock();
 }
 
 app.addEventListener('click', e => {
@@ -1438,6 +1540,8 @@ app.addEventListener('click', e => {
   if (act === 'start') startSession();
   else if (act === 'pick') answer(+b.dataset.i);
   else if (act === 'key') keyIn(b.dataset.k);
+  else if (act === 'ck') moveHand(b.dataset.hand, +b.dataset.d);
+  else if (act === 'ck-check') checkClock();
   else if (act === 'mode') { state.answerMode = b.dataset.v; save(); render(); }
   else if (act === 'print') printRound();
   else if (act === 'next') next();
@@ -1495,6 +1599,8 @@ app.addEventListener('submit', e => {
   save(); render();
 });
 app.addEventListener('change', e => {
+  if (e.target.id === 'player') { setPlayer(e.target.value); render(); return; }
+  if (e.target.id === 'story-theme') { state.storyTheme = e.target.value; state.on.words = true; save(); render(); return; }
   if (e.target.id === 'goal-skill') { state.goal.skill = e.target.value; state.on[e.target.value] = true; save(); render(); return; }
   if (e.target.id !== 'voice') return;
   try { if (e.target.value) localStorage.setItem(VOICE_KEY, e.target.value); else localStorage.removeItem(VOICE_KEY); } catch (err) {}
@@ -1504,7 +1610,7 @@ app.addEventListener('change', e => {
 document.addEventListener('keydown', e => {
   if (screen !== 'play') return;
   const p = sess.probs[sess.i];
-  if (p.done) return;
+  if (p.done || p.interactive) return;
   if (typeable(p)) {
     if (/^[0-9]$/.test(e.key)) keyIn(e.key);
     else if (e.key === 'Backspace') keyIn('del');

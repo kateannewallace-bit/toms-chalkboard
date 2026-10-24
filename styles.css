@@ -378,3 +378,32 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .shp.s { fill: var(--blue); }
 .shp.t { fill: var(--green); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* player and story-theme menus, batch size */
+.top-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.player-pick select { font-weight: 700; }
+.practice-note { margin: 0; padding: 8px 12px; border: 2px dashed var(--blue); border-radius: 10px; color: var(--blue); font-size: .95rem; }
+.chip-stack { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.chip-stack .chip { flex: 1; }
+.theme-pick { display: flex; flex-direction: column; gap: 2px; font-size: .8rem; color: var(--chalk-dim); }
+.theme-pick select { width: 100%; font-size: .9rem; }
+.round-size { justify-content: flex-start; }
+.round-size span { color: var(--chalk-dim); font-size: .95rem; }
+
+/* measuring: labels, floor, string */
+.r-label { fill: var(--chalk); font: 700 14px var(--font); }
+.r-label.dim { fill: var(--chalk-dim); font-weight: 400; }
+.floor { stroke: var(--chalk-dim); stroke-width: 3; }
+.string-loop { fill: none; stroke: var(--yellow); stroke-width: 3; stroke-dasharray: 6 4; }
+.string-line { stroke: var(--yellow); stroke-width: 4; stroke-linecap: round; }
+
+/* set-the-clock and weak spots */
+.set-clock { touch-action: none; cursor: grab; }
+.set-clock-box { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.set-clock-ctrls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.set-clock-ctrls .row-btns span { min-width: 7em; text-align: right; color: var(--chalk-dim); }
+.key-btn.small { min-height: 48px; min-width: 64px; font-size: 1.4rem; }
+.set-clock-ctrls .check { min-width: 200px; }
+.weak-chip[aria-pressed="true"] { border-color: var(--pink); background: rgba(242,167,184,.12); }
+.weak-chip[aria-pressed="true"] strong { color: var(--pink); }
+.weak-chip:disabled { opacity: .5; cursor: default; }

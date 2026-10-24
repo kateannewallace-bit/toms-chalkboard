@@ -294,48 +294,38 @@ const SEASON_STORIES = {
   ],
 };
 
-const seasonCache = {};
-function seasonWorld(m) {
-  if (seasonCache[m]) return seasonCache[m];
-  const v = SEASONS[m], t = v.things;
-  return seasonCache[m] = {
-    name: () => v.name,
-    season: true,
-    extra: SEASON_STORIES[m] || [],
-    t: {
-      add: ({ a, b }, c) => `${c.me} gathered ${a} ${t} ${v.place}. ${cap(v.helper)} brought ${b} more. How many ${t} are there now?`,
-      sub: ({ a, b }, c) => `${c.me} had ${a} ${t}. ${v.lose(b)} How many ${t} are left?`,
-      more: ({ a, b }, c) => `${cap(v.helper)} has ${a} ${t}, and ${c.me} has ${b}. How many more does ${v.helper} have?`,
-      need: ({ T, a }, c) => `${c.me} needs ${T} ${t} for ${v.event} and has ${a} so far. How many more are needed?`,
-      groups: ({ a, b }) => `There are ${a} ${v.containers} with ${b} ${t} in each. How many ${t} is that?`,
-      share: ({ N, g }, c) => `${c.me} shared ${N} ${t} equally among ${g} friends at ${v.event}. How many did each friend get?`,
-      groupsPlus: ({ a, b, c: x }, c) => `${c.me} filled ${a} ${v.containers} with ${b} ${t} each, then found ${x} more. How many ${t} altogether?`,
-      addSub: ({ a, b, c: x }, c) => `${c.me} had ${a} ${t} and found ${b} more ${v.place}. ${v.lose(x)} How many ${t} are left?`,
-    },
-  };
-}
 const currentSeason = () => SEASONS[new Date().getMonth() + 1];
 
 // Worlds that come up more often in their season
-const WORLD_BOOST = { 6: ['shakespeare'], 7: ['greek'], 8: ['greek'], 9: ['knights'], 10: ['tailypo', 'shakespeare', 'hunter'], 11: ['tailypo'] };
+const WORLD_BOOST = { 6: ['shakespeare'], 7: ['greek'], 8: ['greek'], 9: ['knights'], 10: ['tailypo', 'shakespeare', 'hunter', 'spooky'], 11: ['tailypo'] };
 
 // Dragons from real legends: Norse, English, Sussex and Welsh
 const DRAGONS = ['Fafnir', 'the Lambton Worm', 'the Knucker', 'Y Ddraig Goch'];
-// Story templates already used this round
-const storyMemory = new Set();
 function storyCast() {
   const list = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
   const friends = list(state.cast.friends), villains = list(state.cast.villains);
   storyCast.text = [state.cast.friends, state.cast.villains, state.cast.others].join(',').toLowerCase();
-  return { me: N(), H: `${N()} the Hunter`, K: `${N()} the knight`, D: pick(DRAGONS), F: pick(friends.length ? friends : ['Fu Dog']), V: pick(villains.length ? villains : ['the Death Raccoon']) };
+  const single = villains.filter(v => !/s$/i.test(v));  // "the gremlins" can't be "has"
+  return { me: N(), H: `${N()} the Hunter`, K: `${N()} the knight`, D: pick(DRAGONS),
+    F: pick(friends.length ? friends : ['Fu Dog']), V: pick(villains.length ? villains : ['the Death Raccoon']),
+    V1: pick(single.length ? single : ['the Death Raccoon']) };
 }
-function pickWorld() {
-  const m = new Date().getMonth() + 1;
-  if (state.seasonal && rng() < 0.35) return seasonWorld(m);
+// Where story problems come from: the theme picked above Story problems, or all worlds plus the season.
+function storySources() {
+  const m = new Date().getMonth() + 1, theme = state.storyTheme || 'all';
+  const world = k => ({ name: WORLDS[k].name(), weight: 1,
+    list: kind => [...WORLDS[k].t[kind], ...(WORLDS[k].extra || []).filter(x => x.kind === kind && storyCast.text.includes(x.needs)).map(x => x.f)] });
+  const season = mm => ({ name: SEASONS[mm].name, weight: 1, list: kind => (SEASON_STORIES[mm] || []).filter(x => x.kind === kind).map(x => x.f) });
+  if (theme === 'spooky') return [world('spooky'), season(10)];
+  if (theme === 'nature') return [world('nature'), season(m)];
+  if (theme !== 'all' && WORLDS[theme]) return [world(theme)];
   let ids = Object.keys(WORLDS).filter(k => state.worlds[k]);
   if (!ids.length) ids = ['nature'];
-  return WORLDS[pick(ids.flatMap(k => (WORLD_BOOST[m] || []).includes(k) ? [k, k, k] : [k]))];
+  const src = ids.map(k => Object.assign(world(k), { weight: (WORLD_BOOST[m] || []).includes(k) ? 2 : 1 }));
+  if (state.seasonal) src.push(Object.assign(season(m), { weight: src.reduce((t, x) => t + x.weight, 0) * 0.4 }));
+  return src;
 }
+const STORY_THEMES = () => [['all', 'All themes'], ...Object.keys(WORLDS).map(k => [k, k === 'nature' ? 'Nature & seasons' : WORLDS[k].name()])];
 function storyNums(kind, L) {
   const big = L >= 2;
   switch (kind) {
@@ -364,30 +354,34 @@ function storyAnswer(kind, n) {
 }
 const STORY_KINDS = { 1: ['add', 'sub', 'more', 'need'], 2: ['add', 'sub', 'more', 'need'], 3: ['groups'], 4: ['share', 'groupsPlus', 'addSub'] };
 
+// Stories are remembered across days (state.storyHistory), so every scenario of a kind is used
+// before any comes back, and the ones used longest ago come back first.
 function genWords(L) {
-  const kind = pick(STORY_KINDS[L] || STORY_KINDS[4]);
-  const n = storyNums(kind, L), cast = storyCast();
-  // Character and seasonal stories mix with each world's main story. No story repeats within a round:
-  // if the pick was already used, try another world.
-  const unused = fs => fs.filter(f => !storyMemory.has(f));
-  let world, f;
-  for (let tries = 0; tries < 12; tries++) {
-    world = pickWorld();
-    const extras = (world.extra || []).filter(x => x.kind === kind && (!x.needs || storyCast.text.includes(x.needs))).map(x => x.f);
-    const pool = unused(extras);
-    f = extras.length && rng() < (world.season ? 0.9 : 0.6) ? pick(pool.length ? pool : extras) : world.t[kind];
-    if (storyMemory.has(f) && pool.length) f = pick(pool);
-    // the plain seasonal story (the month's one object, like jack-o'-lanterns) shows up at most once a round
-    const plainSeason = world.season && f === world.t[kind];
-    if (plainSeason && storyMemory.has(world)) { if (pool.length) f = pick(pool); else continue; }
-    if (!storyMemory.has(f)) break;
+  const hist = state.storyHistory || (state.storyHistory = []);
+  const recent = new Set(hist.slice(-80)), last5 = new Set(hist.slice(-5)), sources = storySources(), cast = storyCast();
+  const opts = (STORY_KINDS[L] || STORY_KINDS[4]).map(k => ({ k, all: sources.flatMap(s => s.list(k).map(f => ({ f, s }))) })).filter(o => o.all.length);
+  const fresh = o => o.all.filter(e => !recent.has(e.f.storyId)), allowed = o => o.all.filter(e => !last5.has(e.f.storyId));
+  // never reuse any of the last five stories; prefer kinds that still have stories not used lately
+  let kindOpts = opts.filter(o => fresh(o).length);
+  if (!kindOpts.length) kindOpts = opts.filter(o => allowed(o).length);
+  if (!kindOpts.length) kindOpts = opts;
+  const o = pick(kindOpts), kind = o.k;
+  let pool = fresh(o);
+  if (!pool.length) {
+    pool = allowed(o);
+    if (pool.length) { const age = e => hist.lastIndexOf(e.f.storyId), oldest = Math.min(...pool.map(age)); pool = pool.filter(e => age(e) === oldest); }
+    else pool = o.all;
   }
-  storyMemory.add(f);
-  if (world.season && f === world.t[kind]) storyMemory.add(world);
-  const story = f(n, cast);
+  const srcs = [...new Set(pool.map(e => e.s))];
+  let r = rng() * srcs.reduce((t, x) => t + x.weight, 0), src = srcs[0];
+  for (const x of srcs) { r -= x.weight; if (r <= 0) { src = x; break; } }
+  const e = pick(pool.filter(x => x.s === src));
+  hist.push(e.f.storyId);
+  if (hist.length > 150) hist.splice(0, hist.length - 150);
+  const n = storyNums(kind, L), story = e.f(n, cast);
   const { ans, d, explain } = storyAnswer(kind, n);
   return {
-    skill: 'words', story, speak: story, ans, world: world.name(), explain,
+    skill: 'words', sub: kind, story, speak: story, ans, world: src.name, explain,
     distract: [...d, [ans + 1, 'counting slip'], [ans - 1, 'counting slip'], [ans + 10, 'off by ten']],
   };
 }
