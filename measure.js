@@ -10,7 +10,7 @@ const MEASURE_LONG = [
   { n: 'worm', s: 'worm', sizes: [['inches', 3, 8], ['cm', 8, 18]] },
   { n: 'carrot', s: 'carrot', sizes: [['inches', 5, 9], ['cm', 13, 20]] },
   { n: "wizard's wand", s: 'wand', sizes: [['inches', 10, 15]] },
-  { n: 'toy dirigible', s: 'blimp', sizes: [['inches', 8, 15]] },
+  { n: 'dirigible', s: 'blimp', sizes: [['feet', 500, 800, 100]] },  // the Hindenburg was about 800 feet long
   { n: 'garter snake', s: 'snake', sizes: [['feet', 2, 4]] },
   { n: "knight's sword", s: 'sword', sizes: [['feet', 3, 4]] },
   { n: 'spear of Athena', s: 'spear', sizes: [['feet', 7, 10]] },
