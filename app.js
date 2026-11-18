@@ -25,13 +25,13 @@ const greet = s => childName() ? `${s}, ${childName()}!` : `${s}!`;
 const SKILLS = {
   add:      { name: 'Adding',          levels: ['Sums to 10', 'Make a ten (8 + 7)', 'Two-digit + one-digit, carrying', 'Two-digit + two-digit, carrying', 'Three-digit + two-digit', 'Three-digit + three-digit', 'Four-digit adding'] },
   sub:      { name: 'Taking away',     levels: ['Within 10', 'Within 20', 'Two-digit − one-digit', 'Two-digit − two-digit, no borrowing', 'Two-digit with borrowing', 'Three-digit with borrowing'] },
-  place:    { name: 'Place value',     levels: ['Tens and ones blocks', 'Hundreds, tens and ones blocks', 'Value of a digit', 'Expanded form (300 + 40 + 6)', 'Compare with > and <', 'Regrouping (13 tens)'] },
+  place:    { name: 'Place value',     levels: ['Tens and ones blocks', 'Hundreds, tens and ones blocks', 'Value of a digit', 'Expanded form (300 + 40 + 6)', 'Compare with > and <', 'Regrouping (13 tens)', 'Thousands blocks', 'Value of a digit to 9,999', 'Value of a digit to 999,999', 'Compare big numbers', 'Listen and find the number'] },
   patterns: { name: 'Counting patterns', levels: ['Skip-count by 5s and 10s', 'Even or odd?', 'Count by 10s and 100s from any number', 'Count back by 10s and 100s'] },
   arrays:   { name: 'Arrays',          levels: ['How many dots?', 'Match the number sentence', 'Bigger arrays', 'Equal rows (first sharing)'] },
   money:    { name: 'Money',           levels: ['Pennies, nickels and dimes', 'Add quarters', 'Coins and dollars', 'Money stories', 'Pay and get change', 'How many can you buy?', 'Shopping trip: change in bills and coins'] },
-  time:     { name: 'Telling time',    levels: ["O'clock", 'Half past', 'Quarter past and quarter to', 'Five-minute times', 'Almost the next hour (5:50)'] },
+  time:     { name: 'Telling time',    levels: ["O'clock", 'Half past', 'Quarter past and quarter to', 'Five-minute times', 'Almost the next hour (5:50)', 'How much later? (whole hours)', 'How much later? (minutes)', 'How long did it take?', 'Days, weeks and months', 'Read a calendar page'] },
   measure:  { name: 'Measuring',       levels: ['Measure with a ruler', "Ruler that doesn't start at 0", 'How much longer?', 'Length stories'] },
-  graphs:   { name: 'Graphs',          levels: ['Picture graphs', 'Bar graphs', 'How many more?', 'How many in all?'] },
+  graphs:   { name: 'Graphs',          levels: ['Picture graphs', 'Bar graphs', 'How many more?', 'How many in all?', 'Line plots: how many?', 'Line plots: compare and total', 'Make a line plot from a list'] },
   shapes:   { name: 'Shapes',          levels: ['Count the sides', 'Name the shape', 'Halves, thirds and fourths', 'More sides and equal parts'] },
   words:    { name: 'Story problems',  levels: ['Adding and taking away to 20', 'Two-digit stories', 'Groups and rows', 'Two steps and sharing'] },
   times:    { name: 'Times tables',    levels: ['×1, ×2, ×5, ×10', '×3 and ×4', 'Up to 10 × 10', 'Up to 12 × 12', 'Bigger facts (×11 to ×25)', 'Two-digit × one-digit (23 × 4)'] },
@@ -43,12 +43,24 @@ const SKILLS = {
   squares:  { name: 'Squares & roots', levels: ['Square numbers to 5²', 'Square numbers to 10²', 'Spot the square number', 'Square roots with blocks (to √100)', 'Square and root undo each other', 'Odd numbers build squares', 'Square roots to √144', 'Multiply roots (√4 × √9 = √36)', 'Split a root (√400 = √4 × √100)', 'Squares to 15² (split into parts)', 'Square roots to √225', 'Divide roots (√72 ÷ √2)', 'Adding roots is different', 'Squares to 19²', 'Square roots to √361', 'Like roots add up (2√3 + 5√3)', 'Simplify roots (√12 = 2√3)', 'Cube roots (∛8 = 2)', '★ Root detective: the clues', '★ Root detective: solve it (to √900)'] },
   powers:   { name: 'Exponents', levels: ['What does 2³ mean?', 'Small powers (2⁴ = 16)', 'Multiply: count the 2s (2² × 2³)', 'Powers of 10', 'Multiply: add the exponents', 'Divide: cross them out (2⁵ ÷ 2²)', 'Divide: subtract the exponents', 'The zero power (5⁰ = 1)', 'Power of a power ((2³)²)', 'Adding powers is different', 'Mixing the rules', 'Letters (a³ × a⁴)'] },
   negatives: { name: 'Below zero',     levels: ['Frog jumps past zero', 'Take away past zero (3 − 5)', 'Start below zero (−4 + 6)', 'Cold-weather stories'] },
-  bignums:  { name: 'Big numbers',     levels: ['Thousands blocks', 'Value of a digit to 9,999', 'Value of a digit to 999,999', 'Compare big numbers', 'Listen and find the number'] },
+  divide:   { name: 'Division',        levels: ['Share equally (pictures)', 'How many groups? (pictures)', 'The ÷ sign means share', 'Times helps divide (3 × 4 = 12)', 'Fact families', '÷2, ÷5 and ÷10', '÷3 and ÷4', 'All the facts to 100 ÷ 10', 'Mystery number (☐ ÷ 4 = 5)', 'Leftovers (pictures)', 'Remainders (17 ÷ 5 = 3 r 2)', 'Division stories', 'Split to divide (72 ÷ 3)'] },
+  fractions: { name: 'Fractions',      levels: ['One part shaded (1/4)', 'Several parts shaded (3/4)', 'Fraction of a group (1/3 of 12)', 'Some parts of a group (3/4 of 12)', 'Fractions on a number line', 'Compare: same bottom number', 'Compare: same top number', 'Equal fractions (1/2 = 2/4)', 'Fractions that make wholes (6/3 = 2)', 'Add fractions (same bottom)', 'Take away fractions (same bottom)', 'Fraction stories'] },
+  factors:  { name: 'Factors & primes', levels: ['Multiples (count by 3s, 4s, 6s)', 'Factor pairs with arrays (12 = 3 × 4)', 'Is it a factor?', 'All the factors of a number', 'Prime or not?', 'When do they meet? (common multiples)', 'Biggest common factor', 'Prime factor trees (12 = 2 × 2 × 3)', 'Prime factors with powers (12 = 2² × 3)'] },
+  round:    { name: 'Rounding & estimating', levels: ['Closer to which ten?', 'Round to the nearest ten', 'Round to the nearest hundred', 'Round three-digit numbers to the ten', 'Estimate a sum', 'Estimate a difference', 'Is that answer sensible?', 'About how many dollars?'] },
+  area:     { name: 'Area & perimeter', levels: ['Count the squares (area)', 'Area: rows × columns', 'Perimeter: walk around the edge', 'Perimeter from side lengths', 'Area or perimeter?', 'L-shapes: split into rectangles', 'Find the missing side', 'Same area, different perimeter'] },
+  chance:   { name: 'Counting & chance', levels: ['Knights and horses: count the pairs', 'Outfits and dinners (3 × 4 ways)', 'Three choices (2 × 3 × 2)', 'Lining up: how many orders?', 'Handshakes at the Round Table', 'Most likely color', 'Chance as "2 out of 7"', 'Certain, likely, unlikely, impossible', 'Two dice: how many ways?'] },
+  roman:    { name: 'Roman numerals', levels: ['I, V and X (to 10)', 'Up to 39 (XXIV)', 'L and C (to 100)', 'Write it the Roman way', 'D and M: Roman years', 'Roman sums (XII + VIII)'] },
 };
+// Topics grouped by strand. The ones from Khan Academy's 2nd grade units carry a small "2nd" badge.
 const GROUPS = [
-  { title: '2nd grade', note: "Following Khan Academy's 2nd grade units", keys: ['add', 'sub', 'bonds', 'place', 'patterns', 'arrays', 'money', 'time', 'measure', 'graphs', 'shapes', 'words'] },
-  { title: 'Beyond 2nd grade', note: '', keys: ['times', 'order', 'missing', 'thinking', 'logic', 'squares', 'powers', 'negatives', 'bignums'] },
+  { title: 'Numbers', note: 'Place value, counting, rounding', keys: ['place', 'patterns', 'round', 'roman', 'negatives'] },
+  { title: 'Adding & taking away', note: '', keys: ['add', 'sub', 'bonds', 'words'] },
+  { title: 'Times & sharing', note: 'Multiplying, dividing, fractions', keys: ['arrays', 'times', 'divide', 'fractions', 'factors'] },
+  { title: 'Measuring, time & data', note: '', keys: ['money', 'time', 'measure', 'area', 'graphs', 'shapes'] },
+  { title: 'The road to algebra', note: 'Order of operations leads into the mystery-number equations', keys: ['order', 'missing', 'squares', 'powers'] },
+  { title: 'Puzzles & reasoning', note: '', keys: ['thinking', 'logic', 'chance'] },
 ];
+const KHAN2 = new Set(['add', 'sub', 'place', 'patterns', 'arrays', 'money', 'time', 'measure', 'graphs', 'shapes', 'words']);
 const ORDER = Object.keys(SKILLS);
 const GOAL_SIZES = [25, 50, 100];
 const ROUND_SIZES = [10, 15, 20, 30];
@@ -59,8 +71,8 @@ const goalMet = () => goalDone() >= state.goal.target;
 
 function defaultState() {
   return {
-    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, thinking: 1, logic: 1, bonds: 3, order: 1, squares: 1, powers: 1, negatives: 1, bignums: 1 }, squaresV2: true, squaresV3: true, quietDefault: true,
-    on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, thinking: true, logic: true, bonds: true, order: true, squares: false, powers: true, negatives: false, bignums: false },
+    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, thinking: 1, logic: 1, bonds: 3, order: 1, squares: 1, powers: 1, negatives: 1, divide: 1, fractions: 1, factors: 1, round: 1, area: 1, chance: 1, roman: 1 }, squaresV2: true, squaresV3: true, placeV2: true, quietDefault: true,
+    on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, thinking: true, logic: true, bonds: true, order: true, squares: false, powers: true, negatives: false, divide: true, fractions: true, factors: false, round: false, area: false, chance: false, roman: false },
     rec: {}, slips: {}, sessions: [], log: [],
     cards: [], stretch: {}, mastered: {}, cleared: 0,
     worlds: { hunter: true, knights: true, pixies: true, tailypo: true, greek: true, egypt: true, shakespeare: true, nature: true }, seasonal: true,
@@ -101,6 +113,30 @@ function normalize(s) {
     s.weak = weak;
     s.squaresV3 = true;
   }
+  // Big numbers became Place value levels 7–11; carry over its level, progress, review cards and weak spots
+  if (raw.levels && !raw.placeV2) {
+    const b = (raw.levels && raw.levels.bignums) || 1, used = !!((raw.on && raw.on.bignums) || b > 1 || (s.mastered && s.mastered.bignums) || (s.rec && (s.rec.bignums || []).length));
+    if (used) {
+      s.levels.place = Math.max(s.levels.place, s.mastered.bignums ? 11 : 6 + b);
+      if (raw.on && raw.on.bignums) s.on.place = true;
+      if (s.levels.place === 6 + b) { s.rec.place = s.rec.bignums || []; s.stretch.place = s.stretch.bignums || []; }
+      if (s.mastered.bignums) s.mastered.place = true; else delete s.mastered.place;
+    }
+    (s.cards || []).forEach(c => { if (c.skill === 'bignums') { c.skill = 'place'; c.level += 6; } });
+    const weak = {};
+    for (const [k, w] of Object.entries(s.weak || {})) {
+      if (w && w.skill === 'bignums') { w.skill = 'place'; w.level += 6; weak[`place|${w.level}|${w.sub || ''}`] = w; } else weak[k] = w;
+    }
+    s.weak = weak;
+    if (s.done.bignums) s.done.place = (s.done.place || 0) + s.done.bignums;
+    if (s.goal && s.goal.skill === 'bignums') s.goal.skill = 'place';
+    (s.log || []).forEach(l => { if (l.k === 'bignums') { l.k = 'place'; if (l.to) l.to += 6; } });
+    (s.sessions || []).forEach(x => { if (x.skills) x.skills = [...new Set(x.skills.map(k => k === 'bignums' ? 'place' : k))]; });
+    s.placeV2 = true;
+  }
+  // drop topics that no longer exist, and reopen any topic that was mastered before it grew new levels
+  for (const k of Object.keys(s.levels)) if (!SKILLS[k]) { delete s.levels[k]; delete s.on[k]; delete s.rec[k]; delete s.stretch[k]; delete s.mastered[k]; delete s.done[k]; if (s.goalBase) delete s.goalBase[k]; }
+  for (const k of Object.keys(SKILLS)) if (s.mastered[k] && s.levels[k] < SKILLS[k].levels.length) { s.levels[k]++; delete s.mastered[k]; }
   // older saves had an on/off read-aloud switch
   if (s.readAloud != null) { s.voice = s.readAloud ? 'all' : 'stories'; delete s.readAloud; }
   // rounds are now 10, 20 or 30 problems; read-aloud now starts off (applied once to older saves)
@@ -816,6 +852,7 @@ function pairsDots(n) {
 
 /* ---------- 2nd grade generators ---------- */
 function genPlace(L) {
+  if (L >= 7) return genBignums(L - 6);
   if (L === 1 || L === 2) {
     const n = L === 1 ? rand(11, 99) : rand(101, 999), h = Math.floor(n / 100), t = Math.floor(n / 10) % 10, o = n % 10;
     const d = L === 1
@@ -880,6 +917,7 @@ function genMoney(L) {
   return Object.assign({ skill: 'money', speak: p.story, fmt: cents }, p);
 }
 function genTime(L) {
+  if (L >= 6) return genTimePlus(L);
   const h = rand(1, 12), m = L === 1 ? 0 : L === 2 ? 30 : L === 3 ? pick([15, 45]) : L === 5 ? pick([40, 45, 50, 55]) : 5 * rand(1, 11);
   const fmt = (hh, mm) => `${((hh - 1 + 12) % 12) + 1}:${pad2(mm)}`;
   const ok = fmt(h, m), cand = [];
@@ -914,6 +952,7 @@ function genTime(L) {
 }
 // genMeasure lives in measure.js
 function genGraphs(L) {
+  if (L >= 5) return genLinePlot(L);
   const set = pick(GRAPH_SETS);
   let vals; do { vals = set.cats.map(() => rand(1, L === 1 ? 8 : 10)); } while (new Set(vals).size < 3);
   const visual = L === 1 ? pictureGraph(set, vals) : barGraph(set, vals);
@@ -982,7 +1021,7 @@ function genNegatives(L) {
 function genBignums(L) {
   if (L === 1) {
     const n = rand(1001, 9999), th = Math.floor(n / 1000), h = Math.floor(n / 100) % 10, t = Math.floor(n / 10) % 10, o = n % 10;
-    return { skill: 'bignums', visual: pvSvg(null, 4, [{ th, h, t, o }]), ask: 'What number do the blocks show?', speak: 'What number do the blocks show? A big cube is one thousand.', ans: n, fmt: commas,
+    return { skill: 'place', visual: pvSvg(null, 4, [{ th, h, t, o }]), ask: 'What number do the blocks show?', speak: 'What number do the blocks show? A big cube is one thousand.', ans: n, fmt: commas,
       distract: [[th + h + t + o, 'counted blocks, not their values'], [h * 1000 + th * 100 + t * 10 + o, 'mixed up thousands and hundreds'], [n + 1000, 'miscounted the thousands'], [n + 100, 'miscounted the hundreds']],
       explain: `${pl(th, 'thousand')}, ${pl(h, 'hundred')}, ${pl(t, 'ten')} and ${pl(o, 'one')} make ${commas(n)}.` };
   }
@@ -993,19 +1032,19 @@ function genBignums(L) {
     const names = { 1: 'ones', 10: 'tens', 100: 'hundreds', 1000: 'thousands', 10000: 'ten thousands', 100000: 'hundred thousands' };
     const shown = commas(n);
     let k = 0; const q = [...shown].map(ch => { if (ch === ',') return ch; const out = k === pos ? `<span class="hl">${ch}</span>` : ch; k++; return out; }).join('');
-    return { skill: 'bignums', q, ask: 'What is the value of the circled digit?', speak: `In the number ${n}, what is the value of the circled ${dgt}?`, ans: dgt * place, fmt: commas,
+    return { skill: 'place', q, ask: 'What is the value of the circled digit?', speak: `In the number ${n}, what is the value of the circled ${dgt}?`, ans: dgt * place, fmt: commas,
       distract: [[dgt * place * 10, 'picked the wrong place'], [dgt * Math.max(1, place / 10), 'picked the wrong place'], [dgt, 'gave the digit, not its value'], [dgt * place * 100, 'picked the wrong place']],
       explain: `The ${dgt} is in the ${names[place]} place, so it is worth ${commas(dgt * place)}.` };
   }
   if (L === 4) {
     const a = rand(1000, 999999); let b = rng() < 0.5 ? a + pick([-1, 1]) * pick([10, 100, 1000, 10000]) : rand(1000, 999999); if (b < 1000) b = a + 100;
     const sym = a > b ? '>' : a < b ? '<' : '=';
-    return { skill: 'bignums', q: `${commas(a)} ${BOX} ${commas(b)}`, ask: 'Which sign goes in the box?', speak: `Which sign goes between ${a} and ${b}? Greater than, less than, or equal?`, ans: sym,
+    return { skill: 'place', q: `${commas(a)} ${BOX} ${commas(b)}`, ask: 'Which sign goes in the box?', speak: `Which sign goes between ${a} and ${b}? Greater than, less than, or equal?`, ans: sym,
       choices: [{ v: '>', ok: sym === '>', tag: 'flipped the sign', say: 'greater than' }, { v: '<', ok: sym === '<', tag: 'flipped the sign', say: 'less than' }, { v: '=', ok: sym === '=', tag: 'thought they were equal', say: 'equal' }],
       explain: `Count the digits first. Then compare from the left, place by place.` };
   }
   const th = rand(1, 9), h = rand(0, 9), t = rand(0, 9), o = rand(1, 9), n = th * 1000 + h * 100 + t * 10 + o;
-  return { skill: 'bignums', ask: 'Listen! Tap the speaker to hear it again.', speak: `Listen. ${n}. Which number did you hear?`, mustSpeak: true, printStory: `Find the number: ${numberWords(n)}.`, ans: n, fmt: commas,
+  return { skill: 'place', ask: 'Listen! Tap the speaker to hear it again.', speak: `Listen. ${n}. Which number did you hear?`, mustSpeak: true, printStory: `Find the number: ${numberWords(n)}.`, ans: n, fmt: commas,
     distract: [[th * 1000 + t * 100 + h * 10 + o, 'mixed up the places'], [th * 10000 + h * 100 + t * 10 + o, 'wrote too many zeros'], [th * 100 + h * 10 + t, 'left off a digit'], [n + 1000, 'misheard the thousands']],
     explain: `${commas(n)}: ${th} thousand, ${h} hundred${t || o ? ` and ${t * 10 + o}` : ''}.` };
 }
@@ -1027,7 +1066,7 @@ function genOddSquares() {
 const HANDS = {
   add: 'Make two piles of acorns or chestnuts. Push them together, and every time you make ten, wrap them in a little cloth bundle.',
   sub: 'Line up 15 beeswax blocks and take some away for a gnome to "borrow." How many are left on the table?',
-  place: 'Bundle sticks or straws into tens with yarn. Ten bundles tied together make a hundred. Build your child’s age, then the year.',
+  place: 'Bundle sticks or straws into tens with yarn. Ten bundles tied together make a hundred. Build your child’s age, then the year. Later, find big numbers in the world (a page count, a mileage sign) and read them together.',
   patterns: 'Hop along stepping stones counting by 5s, then by 10s. Pair up socks from the laundry: even or odd?',
   arrays: 'Lay out acorns or stones in rows on a wool cloth: 3 rows of 4, then 4 rows of 3. Same number?',
   money: 'Play shop with real coins. Price a few things at the nature table and let your child pay and make change.',
@@ -1045,10 +1084,16 @@ const HANDS = {
   squares: 'Build squares from beeswax blocks: 1, then 4, then 9. Add one L-shaped layer of a new color each time.',
   powers: 'Fold a sheet of paper in half, again and again. Count the layers each time: 2, 4, 8… that is 2¹, 2², 2³. How many folds before it won’t fold any more?',
   negatives: 'Draw a chalk number line on the sidewalk with 0 in the middle. Hop forward and back, past zero.',
-  bignums: 'Find big numbers in the world: a page count, a mileage sign, the year. Read them together and build one with stick bundles.',
+  divide: 'Deal out a bowl of chestnuts to everyone at the table like cards: one for you, one for me. Does it come out even? What is left over?',
+  fractions: 'Cut an apple, a pie or a folded paper into halves, fourths and eighths. Which is bigger, one fourth or one eighth? Share 12 acorns: what is one third of them?',
+  factors: 'Take 12 beeswax blocks and find every rectangle you can make: 1 by 12, 2 by 6, 3 by 4. Try 13. Why only one way? That makes 13 prime.',
+  round: 'At the shop, guess the total before the cashier says it: round each price to the nearest dollar and add them in your head.',
+  area: 'Cover a placemat with playing cards or coasters: how many cover it? Then lay string around the edge and measure the string. One is area, one is perimeter.',
+  chance: 'Put 5 red and 2 blue beads in a sock. Guess which color you will pull, then try 10 times and tally. Count outfits: 3 shirts and 2 pairs of pants make how many?',
+  roman: 'Look for Roman numerals on clock faces, old buildings, book chapters and film credits. Build them with sticks: I, V, X.',
 };
 
-const GEN = { add: genAdd, sub: genSub, place: genPlace, patterns: genPatterns, arrays: genArrays, money: genMoney, time: genTime, measure: genMeasure, graphs: genGraphs, shapes: genShapes, words: genWords, times: genTimes, missing: genMissing, squares: genSquares, negatives: genNegatives, bignums: genBignums, thinking: genThinking, logic: genLogic, bonds: genBonds, order: genOrder, powers: genPowers };
+const GEN = { add: genAdd, sub: genSub, place: genPlace, patterns: genPatterns, arrays: genArrays, money: genMoney, time: genTime, measure: genMeasure, graphs: genGraphs, shapes: genShapes, words: genWords, times: genTimes, missing: genMissing, squares: genSquares, negatives: genNegatives, divide: genDivide, fractions: genFractions, factors: genFactors, round: genRounding, area: genArea, chance: genChance, roman: genRoman, thinking: genThinking, logic: genLogic, bonds: genBonds, order: genOrder, powers: genPowers };
 
 function buildChoices(ans, distract, neg) {
   const seen = new Set([String(ans)]), out = [{ v: ans, ok: true }];
@@ -1089,7 +1134,7 @@ let screen = 'home', sess = null, lastChanges = [], confirmReset = false, confir
 const REVIEW_DAYS = [1, 3, 7, 14, 30];
 const DAY = 864e5;
 const startOfDay = () => new Date().setHours(0, 0, 0, 0);
-const UNLOCK_ORDER = ['add', 'sub', 'place', 'arrays', 'times', 'words', 'money', 'time', 'patterns', 'measure', 'graphs', 'shapes', 'order', 'missing', 'thinking', 'logic', 'bonds', 'squares', 'powers', 'bignums', 'negatives'];
+const UNLOCK_ORDER = ['add', 'sub', 'place', 'arrays', 'times', 'divide', 'words', 'money', 'time', 'patterns', 'measure', 'graphs', 'shapes', 'fractions', 'round', 'area', 'order', 'missing', 'thinking', 'logic', 'bonds', 'factors', 'squares', 'powers', 'chance', 'roman', 'negatives'];
 function readyToStretch(k) {
   const r = (state.rec[k] || []).slice(-6);
   return r.length >= 4 && r.filter(Boolean).length / r.length >= 0.75;
@@ -1339,6 +1384,11 @@ const SUB_NAMES = {
   add: 'adding stories', sub: 'taking-away stories', more: '"how many more" stories', need: '"how many are needed" stories', groups: 'groups stories',
   share: 'sharing stories', groupsPlus: 'two-step stories (groups)', addSub: 'two-step stories', read: 'reading the clock', set: 'setting the clock',
   long: 'measuring length', 'long-offset': 'rulers that don’t start at 0', tall: 'measuring height', around: 'measuring around', 'compare-long': 'comparing lengths', 'compare-tall': 'comparing heights', story: 'measuring stories',
+  left: 'counting the leftovers', full: 'counting full groups', roundUp: 'stories that need one more', leftover: 'leftover stories',
+  'frac-of': 'fraction-of stories', 'frac-left': 'what fraction is left', 'frac-compare': 'comparing fractions in stories',
+  later: 'what time it will be', 'later-wind': 'winding the clock later', 'how-long': 'how long it took', days: 'days of the week', months: 'months of the year', festivals: 'months between festivals', weeks: 'weeks and days', calendar: 'reading a calendar',
+  'plot-read': 'reading a line plot', 'plot-most': 'the most common length', 'plot-more': 'longer than', 'plot-total': 'how many in all', 'plot-range': 'longest minus shortest', 'plot-make': 'making a line plot',
+  lcm: 'when they meet again', sensible: 'is it sensible?', 'money-est': 'money estimates', perim: 'perimeter stories', 'missing-area': 'missing side from area', 'missing-perim': 'missing side from perimeter',
 };
 function weakChip() {
   const n = weakList().length;
@@ -1387,7 +1437,7 @@ function renderHome() {
     <h2>What shall we practice?</h2>
     ${weakChip()}
     ${GROUPS.map(g => `<div class="group"><h3>${g.title}${g.note ? ` <small>${g.note}</small>` : ''}</h3>
-    <div class="chips">${g.keys.map(k => { const chip = `<button class="chip" data-act="chip" data-k="${k}" aria-pressed="${!!state.on[k]}"><strong>${SKILLS[k].name}</strong><small>Level ${state.levels[k]} · ${esc(SKILLS[k].levels[state.levels[k] - 1])}</small>${levelBar(k)}</button>`; return k === 'words' ? `<div class="chip-stack">${storyThemeMenu()}${chip}</div>` : chip; }).join('')}</div></div>`).join('')}
+    <div class="chips">${g.keys.map(k => { const chip = `<button class="chip" data-act="chip" data-k="${k}" aria-pressed="${!!state.on[k]}"><strong>${SKILLS[k].name}${KHAN2.has(k) ? ' <b class="k2" title="Khan Academy 2nd grade">2nd</b>' : ''}</strong><small>Level ${state.levels[k]} · ${esc(SKILLS[k].levels[state.levels[k] - 1])}</small>${levelBar(k)}</button>`; return k === 'words' ? `<div class="chip-stack">${storyThemeMenu()}${chip}</div>` : chip; }).join('')}</div></div>`).join('')}
   </section>
   <button class="start" data-act="start">Start ${state.perSession} problems</button>
   <div class="row-btns round-size"><span>Problems in a batch</span><div class="seg">${ROUND_SIZES.map(n => `<button data-act="per" data-n="${n}" aria-pressed="${state.perSession === n}">${n}</button>`).join('')}</div></div>

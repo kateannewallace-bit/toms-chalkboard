@@ -460,3 +460,72 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .bd-corner { font: 700 15px var(--font); fill: #2f4a28; }
 .coins-small { gap: 6px 8px; max-width: 100%; }
 .choices.pics .choice .coins-small svg { width: 84px; }
+
+/* home: strand badge for Khan 2nd grade topics */
+.k2 { font-size: .62rem; font-weight: 700; color: var(--board); background: var(--chalk-dim); border-radius: 999px; padding: 1px 6px; vertical-align: .2em; letter-spacing: .03em; }
+.chip[aria-pressed="true"] .k2 { background: var(--green); }
+
+/* division: plates, bags and leftovers */
+svg.groups, svg.area, svg.lineplot, svg.bagsvg { max-width: 100%; height: auto; }
+.dv-plate { fill: rgba(238,236,227,.08); stroke: var(--chalk); stroke-width: 2.5; }
+.dv-bag { fill: rgba(159,203,233,.1); stroke: var(--blue); stroke-width: 2.5; stroke-dasharray: 6 4; }
+.dv-plate.on, .dv-bag.on { fill: rgba(243,215,122,.22); stroke: var(--yellow); }
+.dv-dot { fill: var(--chalk); }
+.dv-dot.on { fill: var(--yellow); }
+.dv-dot.dv-left { fill: var(--pink); }
+.q-lines { display: flex; flex-direction: column; gap: .2em; font-size: .8em; }
+
+/* fractions */
+.frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1; font-size: .8em; margin: 0 .08em; }
+.frac > span { padding: 0 .12em; }
+.frac > span:first-child { border-bottom: .09em solid currentColor; padding-bottom: .06em; }
+.frac > span:last-child { padding-top: .06em; }
+.frac .box { width: .8em; height: .85em; border-width: 3px; }
+.choice .frac { font-size: 1em; }
+.part-off { fill: rgba(238,236,227,.06); stroke: var(--chalk); stroke-width: 2; }
+.frac-bar { max-width: 100%; height: auto; display: block; }
+.frac-pair { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.nl-axis { stroke: var(--chalk); stroke-width: 3; }
+.nl-tick.big { stroke-width: 3.5; }
+.nl-arrow { fill: var(--yellow); }
+.nl-num.dim { fill: var(--chalk-dim); }
+.nl-num.hl { fill: var(--yellow); }
+
+/* calendar */
+.cal { display: inline-block; border: 2px solid var(--chalk-dim); border-radius: 12px; padding: 10px 12px; }
+.cal-title { text-align: center; color: var(--yellow); font-weight: 700; margin-bottom: 6px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(30px, 1fr)); gap: 3px; text-align: center; font-variant-numeric: tabular-nums; }
+.cal-h { color: var(--chalk-dim); font-size: .8rem; font-weight: 700; }
+.cal-d { padding: 4px 0; border-radius: 6px; background: rgba(238,236,227,.06); }
+
+/* line plots */
+.lp-x { fill: var(--yellow); font: 700 18px var(--font); }
+.plot-list { font-size: .55em; max-width: 18em; line-height: 1.35; }
+
+/* factors */
+.tree { display: flex; flex-direction: column; gap: 4px; font-size: 1.2rem; }
+.tree .prime { color: var(--green); font-weight: 700; }
+
+/* area & perimeter */
+.ar-cell { fill: rgba(159,203,233,.16); stroke: var(--blue); stroke-width: 1.2; }
+.ar-fill { fill: rgba(159,203,233,.16); }
+.ar-edge { fill: none; stroke: var(--chalk); stroke-width: 3.5; stroke-linejoin: round; }
+.ar-lbl { fill: var(--yellow); font: 700 16px var(--font); }
+
+/* counting & chance */
+.pair-table { border-collapse: collapse; font-size: .95rem; }
+.pair-table th { color: var(--chalk-dim); font-weight: 700; padding: 4px 8px; }
+.pair-table td { color: var(--yellow); text-align: center; border: 1.5px solid rgba(238,236,227,.35); padding: 4px 10px; font-size: 1.3rem; }
+.bag { fill: rgba(238,236,227,.07); stroke: var(--chalk); stroke-width: 3; }
+.bag-tie { fill: none; stroke: var(--chalk-dim); stroke-width: 3; }
+.marble { stroke: rgba(0,0,0,.25); stroke-width: 1.5; }
+.m-red { fill: #e2725b; } .m-blue { fill: var(--blue); } .m-green { fill: var(--green); } .m-yellow { fill: var(--yellow); }
+
+/* roman numerals */
+.roman { font-family: Georgia, "Times New Roman", serif; letter-spacing: .08em; }
+
+@media print {
+  .dv-plate, .dv-bag, .part-off, .ar-edge, .bag, .nl-axis, .nl-tick { stroke: #1d1d1d; }
+  .dv-dot, .lp-x, .ar-lbl, .nl-num, .nl-arrow { fill: #1d1d1d; }
+  .cal, .cal-d { border-color: #1d1d1d; color: #1d1d1d; }
+}
