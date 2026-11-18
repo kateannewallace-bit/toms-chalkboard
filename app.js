@@ -1143,21 +1143,24 @@ function dueCards() {
   const now = Date.now();
   return state.cards.filter(c => c.due <= now && SKILLS[c.skill]).sort((a, b) => a.due - b.due);
 }
-function buildSession() {
-  let on = ORDER.filter(k => state.on[k]);
-  const weakOn = state.on.weak && weakList().length > 0;
+// only: a list of topics for a catch-up round (from "Suggested next"); the usual topic picks are left alone
+// solo: one topic only (the ▶ on a topic card): no weak spots, no other topics' reviews
+function buildSession(only, solo) {
+  let on = only || ORDER.filter(k => state.on[k]);
+  const weakOn = solo ? false : only ? weakList().some(w => only.includes(w.skill)) : state.on.weak && weakList().length > 0;
   if (!on.length && !weakOn) on = ['times'];
   const n = state.perSession, plan = [];
-  for (const c of dueCards().slice(0, Math.ceil(n * 0.3))) plan.push({ skill: c.skill, level: c.level, seed: c.box === 0 ? c.seed : newSeed(), kind: 'again', card: c.id });
-  let rotation = shuffle(on.filter(k => !state.mastered[k] || Math.random() < 0.5));
+  for (const c of dueCards().filter(c => !only || only.includes(c.skill)).slice(0, Math.ceil(n * 0.3))) plan.push({ skill: c.skill, level: c.level, seed: c.box === 0 ? c.seed : newSeed(), kind: 'again', card: c.id });
+  let rotation = shuffle(only ? on : on.filter(k => !state.mastered[k] || Math.random() < 0.5));
   if (!rotation.length) rotation = shuffle(on);
-  if (on.includes(goalSkill()) && on.length > 1 && !goalMet()) rotation.push(goalSkill());
+  if (!only && on.includes(goalSkill()) && on.length > 1 && !goalMet()) rotation.push(goalSkill());
   // Weak spots on: about half of a mixed round, or the whole round if it's the only thing on
-  if (weakOn) rotation = on.length ? shuffle([...rotation, ...rotation.map(() => '__weak')]) : ['__weak'];
+  if (weakOn && only) rotation = shuffle([...rotation, ...Array(Math.min(weakList().filter(w => only.includes(w.skill)).length, rotation.length)).fill('__weak')]);
+  else if (weakOn) rotation = on.length ? shuffle([...rotation, ...rotation.map(() => '__weak')]) : ['__weak'];
   let lastWeak = null;
   for (let i = 0; plan.length < n; i++) {
     const k = rotation[i % rotation.length];
-    if (k === '__weak') { const w = pickWeak(lastWeak) || pickWeak(); if (w) { plan.push({ skill: w.skill, level: w.level, kind: 'weak', weakKey: w.key, sub: w.sub }); lastWeak = w.key; } else if (!on.length) break; continue; }
+    if (k === '__weak') { const w = pickWeak(lastWeak, only) || pickWeak(null, only); if (w) { plan.push({ skill: w.skill, level: w.level, kind: 'weak', weakKey: w.key, sub: w.sub }); lastWeak = w.key; } else if (!on.length) break; continue; }
     const L = state.levels[k], max = SKILLS[k].levels.length, roll = Math.random();
     if (roll < 0.15 && L > 1) plan.push({ skill: k, level: L - 1 - (L > 2 && Math.random() < 0.3 ? 1 : 0), kind: 'easier' });
     else if (roll > 0.89 && L < max && readyToStretch(k)) plan.push({ skill: k, level: L + 1, kind: 'stretch' });
@@ -1173,7 +1176,7 @@ function buildSession() {
   }
   return { probs, i: 0, results: [], cleared: 0 };
 }
-function startSession() { sess = buildSession(); screen = 'play'; render(); autoSay(); }
+function startSession(only, solo) { sess = buildSession(only, solo); screen = 'play'; render(); autoSay(); }
 function autoSay() {
   const p = sess.probs[sess.i];
   // listening problems speak even when read-aloud is off: hearing the number is the question
@@ -1250,8 +1253,8 @@ function noteWeak(p, first) {
   if (!first) { state.weak[key] = { skill: p.skill, level: p.level, sub: p.sub || '', misses: (w ? w.misses : 0) + 1, streak: 0, last: Date.now() }; return; }
   if (w) { w.streak++; w.last = Date.now(); if (w.streak >= WEAK_CLEAR) { delete state.weak[key]; if (sess) sess.weakCleared = (sess.weakCleared || 0) + 1; } }
 }
-function pickWeak(skip) {
-  const list = weakList().filter(w => SKILLS[w.skill] && w.key !== skip);
+function pickWeak(skip, only) {
+  const list = weakList().filter(w => SKILLS[w.skill] && w.key !== skip && (!only || only.includes(w.skill)));
   if (!list.length) return null;
   // more misses and longer since practiced come first
   list.sort((a, b) => (b.misses - b.streak) - (a.misses - a.streak) || a.last - b.last);
@@ -1414,6 +1417,34 @@ function storyThemeMenu() {
   return `<label class="theme-pick"><span>Story theme</span><select id="story-theme" class="pick">${STORY_THEMES().map(([k, n]) => `<option value="${k}" ${k === (state.storyTheme || 'all') ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>`;
 }
 
+/* ---------- suggested next: practiced topics that are starting to slip ----------
+   A topic counts once it has been practiced at all. It is suggested when reviews are due, it has
+   weak spots, it has been tricky lately, or it hasn't come up for 5 days or more. */
+function suggestions() {
+  const now = Date.now(), last = {}, due = {}, weak = {};
+  for (const x of state.sessions) for (const k of x.skills || []) if (SKILLS[k] && !last[k]) last[k] = new Date(x.d).getTime();
+  dueCards().forEach(c => { due[c.skill] = (due[c.skill] || 0) + 1; });
+  weakList().forEach(w => { weak[w.skill] = (weak[w.skill] || 0) + 1; });
+  const out = [];
+  for (const k of ORDER) {
+    if (!(state.done[k] > 0)) continue;
+    const days = last[k] ? Math.floor((now - last[k]) / DAY) : 30, r = (state.rec[k] || []).slice(-6), right = r.filter(Boolean).length;
+    const tricky = r.length >= 4 && right / r.length < 0.6, why = [];
+    if (due[k]) why.push(`${pl(due[k], 'review')} due`);
+    if (weak[k]) why.push(pl(weak[k], 'weak spot'));
+    if (tricky) why.push(`tricky lately (${right} of ${r.length} right)`);
+    if (days >= 5) why.push(last[k] ? `last practiced ${days} days ago` : 'not practiced in a long while');
+    if (why.length) out.push({ k, why: why.join(' · '), score: Math.min(days, 30) + 4 * (weak[k] || 0) + 3 * (due[k] || 0) + (tricky ? 10 : 0) });
+  }
+  return out.sort((a, b) => b.score - a.score).slice(0, 3);
+}
+function suggestBox() {
+  const list = suggestions();
+  if (!list.length) return state.sessions.length ? `<section class="suggest"><h2>Suggested next</h2><p class="note">Everything is fresh. Nothing is slipping right now.</p></section>` : '';
+  return `<section class="suggest"><h2>Suggested next</h2>
+    <ul class="suggest-list">${list.map(x => `<li><strong>${SKILLS[x.k].name}</strong><span>${esc(x.why)}</span></li>`).join('')}</ul>
+    <button class="suggest-go" data-act="catchup" data-k="${list.map(x => x.k).join(',')}">Practice ${list.length > 1 ? 'these' : 'this'}: ${state.perSession} problems</button></section>`;
+}
 function renderHome() {
   const gk = goalSkill(), target = state.goal.target, done = Math.min(goalDone(), target);
   let tally = '';
@@ -1425,6 +1456,7 @@ function renderHome() {
     <div class="top-right">${playerMenu()}<button class="link" data-act="parent">For grown-ups</button></div></header>
   ${inPractice() ? `<p class="practice-note">Practice mode: these rounds use ${esc(childName() || 'the main player')}'s levels, but nothing is saved.</p>` : ''}
   ${childName() ? '' : nameForm("Who's practicing?", 'Start')}
+  ${suggestBox()}
   <section>
     <div class="goal-head">
       <div class="goal-pick"><label for="goal-skill">Goal</label><select id="goal-skill" class="pick">${GROUPS.map(g => `<optgroup label="${g.title}">${g.keys.map(k => `<option value="${k}" ${k === gk ? 'selected' : ''}>${SKILLS[k].name}</option>`).join('')}</optgroup>`).join('')}</select></div>
@@ -1437,7 +1469,7 @@ function renderHome() {
     <h2>What shall we practice?</h2>
     ${weakChip()}
     ${GROUPS.map(g => `<div class="group"><h3>${g.title}${g.note ? ` <small>${g.note}</small>` : ''}</h3>
-    <div class="chips">${g.keys.map(k => { const chip = `<button class="chip" data-act="chip" data-k="${k}" aria-pressed="${!!state.on[k]}"><strong>${SKILLS[k].name}${KHAN2.has(k) ? ' <b class="k2" title="Khan Academy 2nd grade">2nd</b>' : ''}</strong><small>Level ${state.levels[k]} · ${esc(SKILLS[k].levels[state.levels[k] - 1])}</small>${levelBar(k)}</button>`; return k === 'words' ? `<div class="chip-stack">${storyThemeMenu()}${chip}</div>` : chip; }).join('')}</div></div>`).join('')}
+    <div class="chips">${g.keys.map(k => { const chip = `<div class="chip-wrap"><button class="solo-btn" data-act="solo" data-k="${k}" aria-label="Practice only ${SKILLS[k].name}" title="Practice only ${SKILLS[k].name}">▶</button><button class="chip" data-act="chip" data-k="${k}" aria-pressed="${!!state.on[k]}"><strong>${SKILLS[k].name}${KHAN2.has(k) ? ' <b class="k2" title="Khan Academy 2nd grade">2nd</b>' : ''}</strong><small>Level ${state.levels[k]} · ${esc(SKILLS[k].levels[state.levels[k] - 1])}</small>${levelBar(k)}</button></div>`; return k === 'words' ? `<div class="chip-stack">${storyThemeMenu()}${chip}</div>` : chip; }).join('')}</div></div>`).join('')}
   </section>
   <button class="start" data-act="start">Start ${state.perSession} problems</button>
   <div class="row-btns round-size"><span>Problems in a batch</span><div class="seg">${ROUND_SIZES.map(n => `<button data-act="per" data-n="${n}" aria-pressed="${state.perSession === n}">${n}</button>`).join('')}</div></div>
@@ -1730,6 +1762,8 @@ app.addEventListener('click', e => {
   if (!b) return;
   const act = b.dataset.act;
   if (act === 'start') startSession();
+  else if (act === 'solo') { if (SKILLS[b.dataset.k]) startSession([b.dataset.k], true); }
+  else if (act === 'catchup') { const only = b.dataset.k.split(',').filter(k => SKILLS[k]); if (only.length) startSession(only); }
   else if (act === 'pick') answer(+b.dataset.i);
   else if (act === 'helped') { sess.probs[sess.i].helped = b.checked; }
   else if (act === 'flip') { toggleFlip(sess.probs[sess.i], +b.dataset.i); render(); }
