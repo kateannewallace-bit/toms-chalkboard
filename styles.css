@@ -106,7 +106,7 @@ section { display: flex; flex-direction: column; gap: 12px; }
 .feedback .big { font-weight: 700; font-size: 1.4rem; }
 .feedback .good { color: var(--green); }
 .feedback .try { color: var(--pink); }
-.feedback .how { color: var(--chalk-dim); }
+.feedback .how { color: var(--chalk-dim); white-space: pre-line; }
 .next-row { display: flex; justify-content: center; }
 @keyframes wobble { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-6px) } 75% { transform: translateX(6px) } }
 .shake { animation: wobble .25s ease 2; }
@@ -408,3 +408,35 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .weak-chip[aria-pressed="true"] strong { color: var(--pink); }
 .weak-chip:disabled { opacity: .5; cursor: default; }
 .r-num.tape { font-size: 12px; }
+
+/* order of operations: the order ladder and the do/undo chain */
+.order-ladder, .undo-chain { display: block; max-width: 100%; height: auto; margin: 4px auto; }
+.ol-box { fill: transparent; stroke-width: 3; }
+.ol-box.c0 { stroke: var(--blue); } .ol-box.c1 { stroke: var(--green); } .ol-box.c2 { stroke: var(--pink); } .ol-box.c3 { stroke: var(--orange); }
+.ol-t { fill: var(--chalk); font: 700 26px var(--font); }
+.ol-s { fill: var(--chalk-dim); font: 15px var(--font); }
+.ol-arrow { fill: none; stroke: var(--chalk-dim); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.ud-node { fill: transparent; stroke: var(--chalk); stroke-width: 2.5; }
+.ud-node.q { stroke: var(--yellow); stroke-dasharray: 5 4; }
+.ud-n { fill: var(--chalk); font: 700 19px var(--font); }
+.ud-arrow { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.ud-arrow.fwd { stroke: var(--blue); } .ud-arrow.back { stroke: var(--orange); }
+.ud-l { font: 700 15px var(--font); } .ud-l.fwd { fill: var(--blue); } .ud-l.back { fill: var(--orange); }
+
+/* minus flip: a small button riding above each minus sign */
+.q:has(.flip-wrap) { padding-top: 34px; }
+.flip-wrap { position: relative; display: inline-block; }
+.flip-btn { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font: 700 16px var(--font); color: var(--pink); background: transparent; border: 2px dashed rgba(242,167,184,.6); border-radius: 999px; padding: 3px 9px; min-width: 44px; min-height: 30px; white-space: nowrap; letter-spacing: 0; }
+.flip-btn[aria-pressed="true"] { border-style: solid; }
+.neg { color: var(--pink); }
+
+/* exponents: raised powers, colored factor groups, and the cross-out fraction */
+.q sup, .choice sup, .feedback sup { font-size: .55em; vertical-align: .85em; line-height: 0; color: var(--yellow); }
+.q sup .box { width: 1em; height: 1.15em; border-width: 3px; vertical-align: -.1em; }
+.pw-expand { font-size: clamp(1.2rem, 5vw, 1.7rem); font-weight: 700; text-align: center; line-height: 1.5; }
+.pw-expand .g0 { color: var(--blue); } .pw-expand .g1 { color: var(--green); } .pw-expand .g2 { color: var(--orange); } .pw-expand .g3 { color: var(--pink); }
+.pw-op { color: var(--chalk-dim); }
+.pw-frac { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; font-size: clamp(1.3rem, 5.5vw, 1.8rem); font-weight: 700; align-self: center; }
+.pw-bar { height: 3px; width: 100%; background: var(--chalk); border-radius: 2px; }
+.pw-frac .keep { color: var(--green); }
+.pw-frac .x { color: var(--chalk-dim); text-decoration: line-through; text-decoration-color: var(--pink); text-decoration-thickness: 3px; }

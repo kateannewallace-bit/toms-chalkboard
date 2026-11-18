@@ -36,16 +36,18 @@ const SKILLS = {
   words:    { name: 'Story problems',  levels: ['Adding and taking away to 20', 'Two-digit stories', 'Groups and rows', 'Two steps and sharing'] },
   times:    { name: 'Times tables',    levels: ['×1, ×2, ×5, ×10', '×3 and ×4', 'Up to 10 × 10', 'Up to 12 × 12', 'Bigger facts (×11 to ×25)', 'Two-digit × one-digit (23 × 4)'] },
   missing:  { name: 'Mystery number',  levels: ['☐ + 3 = 7', 'Mystery number to 20', '☐ × 4 = 20', 'Two steps: 2 × ☐ + 1 = 9', 'Letters for numbers (n + 7 = 15)'] },
+  order:    { name: 'Order of operations', levels: ['Left to right (9 − 4 + 2)', 'Times before plus (3 + 4 × 2)', '× and ÷ before + and −', 'Parentheses first ((3 + 4) × 2)', 'Which part comes first?', '× and ÷ go left to right (12 ÷ 3 × 2)', 'Three steps (2 × 3 + 4 × 5)', 'Squares come early (2 + 3²)', 'Where do the parentheses go?', 'Letters and the order (2 × a + b)', 'Undo it: 2 × ☐ + 1 = 9', 'Undo it with letters (3 × (n + 2) = 15)'] },
   thinking: { name: 'Thinking problems', levels: ['Part and whole (to 10)', 'Find the missing part (to 20)', 'Which picture matches the story?', 'Comparing bars (to 50)', 'The balance scale', 'Letters for numbers (if a = 5)', 'Why does it work?', 'Two-step bar models', 'Balance with two mystery boxes', 'Equal-parts bars (× and ÷)', 'Two letters (a and b)', 'Three-part bars (to 100)'] },
   logic:    { name: 'Logic & puzzles', levels: ['Odd one out', 'Odd one out: trickier rules', 'True or false?', 'True or false: both sides', 'Compare sums: >, < or =', 'What is the rule?', "I'm thinking of a number", 'Sorting circles', 'Find the two numbers', 'Number pyramids', 'Shape puzzles'] },
   bonds:    { name: 'Number bonds', levels: ['Number bonds to 10', 'Number bonds to 20', 'Make 10 to add (8 + 5)', 'Subtract from 10 (13 − 8)', 'Bonds with tens (to 100)', 'Break apart to add (34 + 25)', 'Bridge to the next ten (47 + 8)', 'Unit bars (3 times as many)'] },
-  squares:  { name: 'Squares & roots', levels: ['Square numbers to 5²', 'Square numbers to 10²', 'Spot the square number', 'Square roots with blocks (to √100)', 'Odd numbers build squares', 'Square roots to √144', 'Squares to 15² (split into parts)', 'Square roots to √225', 'Squares to 19²', 'Square roots to √361', '★ Root detective: the clues', '★ Root detective: solve it (to √900)'] },
+  squares:  { name: 'Squares & roots', levels: ['Square numbers to 5²', 'Square numbers to 10²', 'Spot the square number', 'Square roots with blocks (to √100)', 'Square and root undo each other', 'Odd numbers build squares', 'Square roots to √144', 'Multiply roots (√4 × √9 = √36)', 'Split a root (√400 = √4 × √100)', 'Squares to 15² (split into parts)', 'Square roots to √225', 'Divide roots (√72 ÷ √2)', 'Adding roots is different', 'Squares to 19²', 'Square roots to √361', 'Like roots add up (2√3 + 5√3)', 'Simplify roots (√12 = 2√3)', 'Cube roots (∛8 = 2)', '★ Root detective: the clues', '★ Root detective: solve it (to √900)'] },
+  powers:   { name: 'Exponents', levels: ['What does 2³ mean?', 'Small powers (2⁴ = 16)', 'Multiply: count the 2s (2² × 2³)', 'Powers of 10', 'Multiply: add the exponents', 'Divide: cross them out (2⁵ ÷ 2²)', 'Divide: subtract the exponents', 'The zero power (5⁰ = 1)', 'Power of a power ((2³)²)', 'Adding powers is different', 'Mixing the rules', 'Letters (a³ × a⁴)'] },
   negatives: { name: 'Below zero',     levels: ['Frog jumps past zero', 'Take away past zero (3 − 5)', 'Start below zero (−4 + 6)', 'Cold-weather stories'] },
   bignums:  { name: 'Big numbers',     levels: ['Thousands blocks', 'Value of a digit to 9,999', 'Value of a digit to 999,999', 'Compare big numbers', 'Listen and find the number'] },
 };
 const GROUPS = [
   { title: '2nd grade', note: "Following Khan Academy's 2nd grade units", keys: ['add', 'sub', 'bonds', 'place', 'patterns', 'arrays', 'money', 'time', 'measure', 'graphs', 'shapes', 'words'] },
-  { title: 'Beyond 2nd grade', note: '', keys: ['times', 'missing', 'thinking', 'logic', 'squares', 'negatives', 'bignums'] },
+  { title: 'Beyond 2nd grade', note: '', keys: ['times', 'order', 'missing', 'thinking', 'logic', 'squares', 'powers', 'negatives', 'bignums'] },
 ];
 const ORDER = Object.keys(SKILLS);
 const GOAL_SIZES = [25, 50, 100];
@@ -57,8 +59,8 @@ const goalMet = () => goalDone() >= state.goal.target;
 
 function defaultState() {
   return {
-    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, thinking: 1, logic: 1, bonds: 3, squares: 1, negatives: 1, bignums: 1 }, squaresV2: true, quietDefault: true,
-    on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, thinking: true, logic: true, bonds: true, squares: false, negatives: false, bignums: false },
+    levels: { add: 4, sub: 2, place: 2, patterns: 1, arrays: 2, money: 1, time: 1, measure: 1, graphs: 1, shapes: 1, words: 2, times: 4, missing: 1, thinking: 1, logic: 1, bonds: 3, order: 1, squares: 1, powers: 1, negatives: 1, bignums: 1 }, squaresV2: true, squaresV3: true, quietDefault: true,
+    on: { add: true, sub: true, place: true, patterns: false, arrays: true, money: true, time: true, measure: false, graphs: false, shapes: false, words: true, times: true, missing: false, thinking: true, logic: true, bonds: true, order: true, squares: false, powers: true, negatives: false, bignums: false },
     rec: {}, slips: {}, sessions: [], log: [],
     cards: [], stretch: {}, mastered: {}, cleared: 0,
     worlds: { hunter: true, knights: true, pixies: true, tailypo: true, greek: true, egypt: true, shakespeare: true, nature: true }, seasonal: true,
@@ -86,6 +88,18 @@ function normalize(s) {
     if (s.levels.squares) s.levels.squares = map[s.levels.squares] || 1;
     (s.cards || []).forEach(c => { if (c.skill === 'squares') c.level = map[c.level] || 1; });
     s.squaresV2 = true;
+  }
+  // squares went from 12 to 20 levels (root rules woven in); move saved levels to the same content
+  if (raw.levels && !raw.squaresV3) {
+    const map = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 6, 6: 7, 7: 10, 8: 11, 9: 14, 10: 15, 11: 19, 12: 20 }, to = l => map[l] || l;
+    if (s.levels.squares) s.levels.squares = to(s.levels.squares);
+    (s.cards || []).forEach(c => { if (c.skill === 'squares') c.level = to(c.level); });
+    const weak = {};
+    for (const [k, w] of Object.entries(s.weak || {})) {
+      if (w && w.skill === 'squares') { w.level = to(w.level); weak[`squares|${w.level}|${w.sub || ''}`] = w; } else weak[k] = w;
+    }
+    s.weak = weak;
+    s.squaresV3 = true;
   }
   // older saves had an on/off read-aloud switch
   if (s.readAloud != null) { s.voice = s.readAloud ? 'all' : 'stories'; delete s.readAloud; }
@@ -379,7 +393,7 @@ function genMissing(L) {
     explain: `${t} − ${k} = ${t - k}, and ${m} × ${x} = ${t - k}. So the mystery number is ${x}.`,
   };
 }
-// Squares build up gradually to 19 × 19, then a stretch "root detective" method for finding square roots.
+// Squares build up gradually to 19 × 19, with root rules (in powers.js) woven in early, then a stretch "root detective" method for finding square roots.
 function genSquares(L) {
   const mostly = (lo, hi, oLo, oHi) => rng() < 0.7 ? rand(lo, hi) : rand(oLo, oHi);
   switch (L) {
@@ -387,13 +401,21 @@ function genSquares(L) {
     case 2: return sqNumber(rand(2, 10), rng() < 0.5);
     case 3: return sqSpot();
     case 4: return sqRoot(rand(2, 10), 'blocks');
-    case 5: return genOddSquares();
-    case 6: return sqRoot(mostly(9, 12, 2, 8), 'none');
-    case 7: return sqBig(rand(11, 15));
-    case 8: return sqRoot(rand(11, 15), rng() < 0.5 ? 'area' : 'none');
-    case 9: return sqBig(mostly(16, 19, 11, 15));
-    case 10: return sqRoot(mostly(16, 19, 11, 15), rng() < 0.4 ? 'area' : 'none');
-    case 11: return rootClue();
+    case 5: return rootUndo();
+    case 6: return genOddSquares();
+    case 7: return sqRoot(mostly(9, 12, 2, 8), 'none');
+    case 8: return rootMultiply();
+    case 9: return rootSplit();
+    case 10: return sqBig(rand(11, 15));
+    case 11: return sqRoot(rand(11, 15), rng() < 0.5 ? 'area' : 'none');
+    case 12: return rootDivide();
+    case 13: return rootAddTrap();
+    case 14: return sqBig(mostly(16, 19, 11, 15));
+    case 15: return sqRoot(mostly(16, 19, 11, 15), rng() < 0.4 ? 'area' : 'none');
+    case 16: return rootLike();
+    case 17: return rootSimplify();
+    case 18: return rootCube();
+    case 19: return rootClue();
     default: return rootSolve();
   }
 }
@@ -926,13 +948,15 @@ const HANDS = {
   missing: 'Hide some stones under a bowl: "There are 9 in all and I can see 5. How many are hiding?"',
   logic: 'Play "I\'m thinking of a number" at dinner with three clues, then let your child give you the clues. Or sort the toy basket into two hoops and see what belongs in both.',
   bonds: 'Put 10 acorns in a bowl, hide some under a cup, and ask how many are hiding. Then try 20. Saying the pairs out loud (7 and 3, 6 and 4…) is the whole trick.',
+  order: 'Play "do it, undo it": think of a number, times 2, add 3, and say the answer. Your child undoes it backwards (take away 3, then halve) to find your number. Then swap.',
   thinking: 'Make a balance from a coat hanger and two paper cups. Put in stones or beans and find what makes it level. Or cut ribbon into parts and wholes.',
   squares: 'Build squares from beeswax blocks: 1, then 4, then 9. Add one L-shaped layer of a new color each time.',
+  powers: 'Fold a sheet of paper in half, again and again. Count the layers each time: 2, 4, 8… that is 2¹, 2², 2³. How many folds before it won’t fold any more?',
   negatives: 'Draw a chalk number line on the sidewalk with 0 in the middle. Hop forward and back, past zero.',
   bignums: 'Find big numbers in the world: a page count, a mileage sign, the year. Read them together and build one with stick bundles.',
 };
 
-const GEN = { add: genAdd, sub: genSub, place: genPlace, patterns: genPatterns, arrays: genArrays, money: genMoney, time: genTime, measure: genMeasure, graphs: genGraphs, shapes: genShapes, words: genWords, times: genTimes, missing: genMissing, squares: genSquares, negatives: genNegatives, bignums: genBignums, thinking: genThinking, logic: genLogic, bonds: genBonds };
+const GEN = { add: genAdd, sub: genSub, place: genPlace, patterns: genPatterns, arrays: genArrays, money: genMoney, time: genTime, measure: genMeasure, graphs: genGraphs, shapes: genShapes, words: genWords, times: genTimes, missing: genMissing, squares: genSquares, negatives: genNegatives, bignums: genBignums, thinking: genThinking, logic: genLogic, bonds: genBonds, order: genOrder, powers: genPowers };
 
 function buildChoices(ans, distract, neg) {
   const seen = new Set([String(ans)]), out = [{ v: ans, ok: true }];
@@ -973,7 +997,7 @@ let screen = 'home', sess = null, lastChanges = [], confirmReset = false, confir
 const REVIEW_DAYS = [1, 3, 7, 14, 30];
 const DAY = 864e5;
 const startOfDay = () => new Date().setHours(0, 0, 0, 0);
-const UNLOCK_ORDER = ['add', 'sub', 'place', 'arrays', 'times', 'words', 'money', 'time', 'patterns', 'measure', 'graphs', 'shapes', 'missing', 'thinking', 'logic', 'bonds', 'squares', 'bignums', 'negatives'];
+const UNLOCK_ORDER = ['add', 'sub', 'place', 'arrays', 'times', 'words', 'money', 'time', 'patterns', 'measure', 'graphs', 'shapes', 'order', 'missing', 'thinking', 'logic', 'bonds', 'squares', 'powers', 'bignums', 'negatives'];
 function readyToStretch(k) {
   const r = (state.rec[k] || []).slice(-6);
   return r.length >= 4 && r.filter(Boolean).length / r.length >= 0.75;
@@ -1276,7 +1300,7 @@ function renderPlay() {
   </div>
   <div class="problem" id="problem">
     ${p.story ? `<p class="story">${esc(p.story)}</p>` : ''}
-    ${p.q ? `<div class="q ${p.qClass || ''}">${p.q}</div>` : ''}
+    ${p.q ? `<div class="q ${p.qClass || ''}">${p.skill === 'order' && p.q.includes('−') ? flipHtml(p) : p.q}</div>` : ''}
     ${p.visual || ''}
     ${p.ask ? `<div class="ask">${esc(p.ask)}</div>` : ''}
   </div>
@@ -1539,6 +1563,7 @@ app.addEventListener('click', e => {
   const act = b.dataset.act;
   if (act === 'start') startSession();
   else if (act === 'pick') answer(+b.dataset.i);
+  else if (act === 'flip') { toggleFlip(sess.probs[sess.i], +b.dataset.i); render(); }
   else if (act === 'key') keyIn(b.dataset.k);
   else if (act === 'ck') moveHand(b.dataset.hand, +b.dataset.d);
   else if (act === 'ck-check') checkClock();
