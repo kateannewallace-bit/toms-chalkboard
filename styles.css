@@ -440,3 +440,23 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--yellow); ou
 .pw-bar { height: 3px; width: 100%; background: var(--chalk); border-radius: 2px; }
 .pw-frac .keep { color: var(--green); }
 .pw-frac .x { color: var(--chalk-dim); text-decoration: line-through; text-decoration-color: var(--pink); text-decoration-thickness: 3px; }
+
+/* winding clock */
+.gear-btns { justify-content: center; }
+.gear-btns .key-btn.small { min-width: 70px; }
+.gear-cap { color: var(--orange); font-weight: 700; min-height: 2.6em; text-align: center; max-width: 30em; }
+
+/* grown-up's "I helped" box: small and off to the right, out of the child's way */
+.helped-box { align-self: flex-end; display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--chalk-dim); border: 1.5px dashed rgba(169,181,171,.45); border-radius: 10px; padding: 6px 10px; cursor: pointer; user-select: none; margin-top: -6px; }
+.helped-box input { width: 20px; height: 20px; accent-color: var(--orange); margin: 0; }
+.helped-box:has(input:checked) { color: var(--orange); border-color: var(--orange); border-style: solid; }
+
+/* drawn bills ($5, $10, $20) and small money piles for answer choices */
+.bill-draw { display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+.bd-paper { fill: #cfe3c4; stroke: #7fa36f; stroke-width: 2; }
+.bd-frame { fill: none; stroke: #6f9460; stroke-width: 1.5; stroke-dasharray: 4 3; }
+.bd-seal { fill: #e6efdf; stroke: #6f9460; stroke-width: 1.5; }
+.bd-mid { font: 700 20px var(--font); fill: #2f4a28; }
+.bd-corner { font: 700 15px var(--font); fill: #2f4a28; }
+.coins-small { gap: 6px 8px; max-width: 100%; }
+.choices.pics .choice .coins-small svg { width: 84px; }

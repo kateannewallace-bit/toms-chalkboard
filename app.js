@@ -28,8 +28,8 @@ const SKILLS = {
   place:    { name: 'Place value',     levels: ['Tens and ones blocks', 'Hundreds, tens and ones blocks', 'Value of a digit', 'Expanded form (300 + 40 + 6)', 'Compare with > and <', 'Regrouping (13 tens)'] },
   patterns: { name: 'Counting patterns', levels: ['Skip-count by 5s and 10s', 'Even or odd?', 'Count by 10s and 100s from any number', 'Count back by 10s and 100s'] },
   arrays:   { name: 'Arrays',          levels: ['How many dots?', 'Match the number sentence', 'Bigger arrays', 'Equal rows (first sharing)'] },
-  money:    { name: 'Money',           levels: ['Pennies, nickels and dimes', 'Add quarters', 'Coins and dollars', 'Money stories'] },
-  time:     { name: 'Telling time',    levels: ["O'clock", 'Half past', 'Quarter past and quarter to', 'Five-minute times'] },
+  money:    { name: 'Money',           levels: ['Pennies, nickels and dimes', 'Add quarters', 'Coins and dollars', 'Money stories', 'Pay and get change', 'How many can you buy?', 'Shopping trip: change in bills and coins'] },
+  time:     { name: 'Telling time',    levels: ["O'clock", 'Half past', 'Quarter past and quarter to', 'Five-minute times', 'Almost the next hour (5:50)'] },
   measure:  { name: 'Measuring',       levels: ['Measure with a ruler', "Ruler that doesn't start at 0", 'How much longer?', 'Length stories'] },
   graphs:   { name: 'Graphs',          levels: ['Picture graphs', 'Bar graphs', 'How many more?', 'How many in all?'] },
   shapes:   { name: 'Shapes',          levels: ['Count the sides', 'Name the shape', 'Halves, thirds and fourths', 'More sides and equal parts'] },
@@ -636,7 +636,7 @@ function clockSvg(h, m, minuteRing, setId) {
     s += `<line${id('m')} x1="${c}" y1="${c}" x2="${g.mx}" y2="${g.my}" class="ck-min"/><path${id('tip')} d="${g.tip}" class="ck-min-tip"/>`;
   }
   s += `<circle cx="${c}" cy="${c}" r="9" class="ck-pin"/>` + nums;
-  return `<div class="clock-wrap"><svg class="clock ${setId ? 'set-clock' : ''}" viewBox="0 0 320 320" width="440" role="img" aria-label="clock">${s}</svg>
+  return `<div class="clock-wrap"><svg class="clock ${setId === 'demo' ? 'demo-clock' : setId ? 'set-clock' : ''}" viewBox="0 0 320 320" width="440" role="img" aria-label="clock">${s}</svg>
     <div class="clock-key"><span><i class="k-hour"></i>Short hand: hour</span><span><i class="k-min"></i>Long hand: minutes</span></div></div>`;
 }
 // Set-the-clock problems: drag the hands (or use the arrows), then Check.
@@ -664,6 +664,7 @@ function bindSetClock() {
   if (!svg || screen !== 'play') return;
   const p = sess.probs[sess.i];
   if (p.done) return;
+  if (p.interactive === 'gear') return bindGear(svg, p);
   let hand = null;
   const pos = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; const q = pt.matrixTransform(svg.getScreenCTM().inverse()); return { x: q.x - CLOCK_C, y: q.y - CLOCK_C }; };
   const angle = q => (Math.atan2(q.x, -q.y) * 180 / Math.PI + 360) % 360;
@@ -683,13 +684,89 @@ function bindSetClock() {
 function checkClock() {
   const p = sess.probs[sess.i];
   if (p.done) return;
+  if (p.interactive === 'gear') { p.setH = Math.floor(p.setT / 60) % 12 || 12; p.setM = Math.round(p.setT % 60); }
   const okH = p.setH % 12 === p.target.h % 12, okM = p.setM === p.target.m;
   if (okH && okM) { gotIt(p); render(); return; }
   const swapped = p.setH % 12 === (p.target.m / 5) % 12 && p.setM === (p.target.h % 12) * 5;
   const tag = swapped ? 'mixed up the hands' : okM ? 'set the wrong hour' : okH ? 'set the wrong minutes' : 'set both hands wrong';
-  missed(p, tag, okM ? 'The long hand is right. Check the short hand.' : okH ? 'The short hand is right. Check the long hand.' : 'Not quite. Have another look.');
-  if (p.revealed) { p.setH = p.target.h; p.setM = p.target.m; }
+  if (p.interactive === 'gear') missed(p, tag, okM ? 'The long hand is right, but the hour is wrong. Wind a whole hour with ◀◀ or ▶▶.' : 'Not quite. Keep winding, and watch where the long hand points.');
+  else missed(p, tag, okM ? 'The long hand is right. Check the short hand.' : okH ? 'The short hand is right. Check the long hand.' : 'Not quite. Have another look.');
+  if (p.revealed) { p.setH = p.target.h; p.setM = p.target.m; p.setT = (p.target.h % 12) * 60 + p.target.m; }
   render();
+}
+
+/* ---------- the winding clock: one set of arrows turns both hands together, like the gears inside a real clock.
+   Time is kept as minutes after 12:00 (0–719), so the short hand creeps toward the next number as the long hand goes round. ---------- */
+const tH = T => Math.floor((((T % 720) + 720) % 720) / 60) % 12 || 12;
+function drawClockT(svg, T, ring) {
+  const t = ((T % 720) + 720) % 720, h = Math.floor(t / 60), g = handGeom(h, t - 60 * h, clockR(ring));
+  const hh = svg.querySelector('#ck-h'), mm = svg.querySelector('#ck-m'), tip = svg.querySelector('#ck-tip');
+  hh.setAttribute('x2', g.hx); hh.setAttribute('y2', g.hy); mm.setAttribute('x2', g.mx); mm.setAttribute('y2', g.my); tip.setAttribute('d', g.tip);
+}
+function gearCaption(T) {
+  const t = ((Math.round(T) % 720) + 720) % 720, h = tH(t), m = t % 60, nx = h % 12 + 1;
+  if (m === 0) return `The short hand is right on ${h}. The hour is ${h}.`;
+  return `The short hand is past ${h} but not yet at ${nx}${m >= 40 ? ' (close!)' : ''}, so the hour is still ${h}.`;
+}
+function gearClockHtml(p) {
+  const T = p.setT, h = tH(T), m = T % 60;
+  const btn = (d, label, aria) => `<button class="key-btn small" data-act="gear" data-d="${d}" aria-label="${aria}">${label}</button>`;
+  const ctrls = p.done ? '' : `<div class="set-clock-ctrls">
+      <div class="row-btns gear-btns">${btn(-60, '◀◀', 'Back one hour')}${btn(-5, '◀', 'Back 5 minutes')}${btn(5, '▶', 'Forward 5 minutes')}${btn(60, '▶▶', 'Forward one hour')}</div>
+      <button class="link" data-act="gear-watch">Watch an hour go by, super fast</button>
+      <button class="start check" data-act="ck-check">Check</button></div>`;
+  return `<div class="set-clock-box">${clockSvg(h, m, p.ring, true)}<p class="note gear-cap" id="gear-cap">${gearCaption(T)}</p>${p.done ? '' : '<p class="note">Wind the clock with the arrows, or drag the long hand around. Both hands move together.</p>'}${ctrls}</div>`;
+}
+let gearAnim = null;
+// sweep the hands from one time to another; `then` runs at the end
+function sweepClock(svg, p, from, to, ms, then) {
+  if (gearAnim) cancelAnimationFrame(gearAnim.id);
+  const t0 = performance.now(), cap = document.getElementById('gear-cap');
+  const step = now => {
+    const k = Math.min(1, (now - t0) / ms), e = ms > 1500 ? k : 1 - (1 - k) * (1 - k), T = from + (to - from) * e;
+    drawClockT(svg, T, p.ring); p.shownT = T;
+    if (cap) cap.textContent = gearCaption(Math.floor(T));
+    if (k < 1) gearAnim.id = requestAnimationFrame(step); else { gearAnim = null; then && then(); }
+  };
+  gearAnim = { id: requestAnimationFrame(step) };
+}
+function gearMove(d) {
+  const p = sess.probs[sess.i], svg = document.querySelector('svg.set-clock');
+  if (p.done || !svg) return;
+  const from = p.shownT ?? p.setT;
+  p.setT = (((p.setT + d) % 720) + 720) % 720;
+  // shortest way from where the hands are now to the new time (an hour is a full turn of the long hand)
+  let dl = (((p.setT - from) % 720) + 720) % 720; if (dl > 360) dl -= 720;
+  sweepClock(svg, p, from, from + dl, Math.abs(d) >= 60 ? 900 : 380);
+}
+function gearWatch() {
+  const p = sess.probs[sess.i], svg = document.querySelector('svg.set-clock');
+  if (p.done || !svg || gearAnim) return;
+  const start = Math.floor(p.setT / 60) * 60;
+  sweepClock(svg, p, start, start + 60, 4200, () => setTimeout(() => sweepClock(svg, p, start + 60, p.setT < start ? p.setT + 720 : p.setT, 700), 600));
+}
+function bindGear(svg, p) {
+  let dragging = false;
+  const pos = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; const q = pt.matrixTransform(svg.getScreenCTM().inverse()); return (Math.atan2(q.x - CLOCK_C, -(q.y - CLOCK_C)) * 180 / Math.PI + 360) % 360; };
+  const move = e => {
+    if (!dragging) return;
+    const mm = pos(e) / 6, cur = ((p.setT % 60) + 60) % 60;
+    let dm = mm - cur; if (dm > 30) dm -= 60; if (dm <= -30) dm += 60;
+    p.setT = (((p.setT + dm) % 720) + 720) % 720; p.shownT = p.setT;
+    drawClockT(svg, p.setT, p.ring);
+    const cap = document.getElementById('gear-cap'); if (cap) cap.textContent = gearCaption(Math.floor(p.setT));
+  };
+  svg.addEventListener('pointerdown', e => { if (gearAnim) return; dragging = true; svg.setPointerCapture(e.pointerId); move(e); e.preventDefault(); });
+  svg.addEventListener('pointermove', move);
+  const end = () => { if (!dragging) return; dragging = false; const from = p.setT, snapped = Math.round(p.setT / 5) * 5 % 720; let dl = snapped - from; if (dl > 360) dl -= 720; if (dl < -360) dl += 720; p.setT = snapped; sweepClock(svg, p, from, from + dl, 200); };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+}
+// "watch it" on a reading problem: after a miss, wind from the hour up to the time shown
+function demoRead() {
+  const p = sess.probs[sess.i], svg = document.querySelector('svg.demo-clock');
+  if (!svg || p.demoFrom == null || gearAnim) return;
+  sweepClock(svg, { ring: p.demoRing }, p.demoFrom, p.demoFrom, 1, () => setTimeout(() => sweepClock(svg, { ring: p.demoRing }, p.demoFrom, p.demoTo, 3000), 300));
 }
 
 
@@ -785,6 +862,7 @@ function genPatterns(L) {
   return { skill: 'patterns', q, ask: 'What number goes in the box?', speak: `${seq.map((v, i) => i === miss ? 'blank' : v).join(', ')}. What number goes in the blank?`, ans, distract: [[ans + (step > 0 ? 1 : -1) * (by === 100 ? 10 : 1), 'counted by the wrong amount'], [ans + step, 'skipped a step'], [ans - step, 'repeated a step'], [ans + (step > 0 ? 1 : -1), 'counted by ones']], explain: `${dir} ${by}s: ${seq.join(', ')}` };
 }
 function genMoney(L) {
+  if (L >= 5) return genShop(L); // paying and change live in shop.js
   const pool = L === 1 ? ['d', 'n', 'p'] : ['q', 'd', 'n', 'p'];
   if (L <= 3) {
     const list = Array.from({ length: rand(L === 1 ? 2 : 3, L === 1 ? 6 : 6) }, () => pick(pool));
@@ -802,21 +880,35 @@ function genMoney(L) {
   return Object.assign({ skill: 'money', speak: p.story, fmt: cents }, p);
 }
 function genTime(L) {
-  const h = rand(1, 12), m = L === 1 ? 0 : L === 2 ? 30 : L === 3 ? pick([15, 45]) : 5 * rand(1, 11);
+  const h = rand(1, 12), m = L === 1 ? 0 : L === 2 ? 30 : L === 3 ? pick([15, 45]) : L === 5 ? pick([40, 45, 50, 55]) : 5 * rand(1, 11);
   const fmt = (hh, mm) => `${((hh - 1 + 12) % 12) + 1}:${pad2(mm)}`;
   const ok = fmt(h, m), cand = [];
   if (L === 1) cand.push([fmt(12, h * 5 % 60), 'mixed up the hands'], [fmt(h + 1, 0), 'read the wrong hour'], [fmt(h - 1, 0), 'read the wrong hour'], [fmt(h, 30), 'misread the minute hand']);
   else if (L === 2) cand.push([fmt(h + 1, 30), 'read the next hour'], [fmt(h, 0), 'misread the minute hand'], [fmt(6, h * 5 % 60), 'mixed up the hands'], [fmt(h - 1, 30), 'read the wrong hour']);
   else if (L === 3) cand.push([fmt(h + 1, m), 'read the next hour'], [fmt(h, 60 - m), 'mixed up quarter past and quarter to'], [fmt(m / 5, h * 5 % 60), 'mixed up the hands'], [fmt(h, m / 5), 'read the number the minute hand points to']);
+  else if (L === 5) cand.push([fmt(h + 1, m), 'read the next hour'], [fmt(h, m / 5), 'read the number the minute hand points to'], [fmt(h + 1, m / 5), 'mixed up the hands'], [fmt(h, (m + 5) % 60), 'counted by fives wrong']);
   else cand.push([fmt(h, m / 5), 'read the number the minute hand points to'], [fmt(h + 1, m), 'read the next hour'], [fmt(h, (m + 5) % 60), 'counted by fives wrong'], [fmt(h, (m + 55) % 60), 'counted by fives wrong']);
   const seen = new Set([ok]), choices = [{ v: ok, ok: true }];
   for (const [v, tag] of cand) if (!seen.has(v) && choices.length < 4) { seen.add(v); choices.push({ v, tag }); }
   const said = m === 0 ? `${((h - 1) % 12) + 1} o'clock` : m === 30 ? `half past ${h}` : m === 15 ? `quarter past ${h}` : m === 45 ? `quarter to ${(h % 12) + 1}` : ok;
-  if (rng() < 0.4) {
+  // the winding clock: both hands move together (half the set problems at level 4, most of them at level 5)
+  if ((L === 4 && rng() < 0.25) || (L === 5 && rng() < 0.45)) {
+    const hr = ((h - 1) % 12) + 1, from = (((hr - 1 - rand(0, 1) * 2) % 12 + 12) % 12) * 60 + (L === 5 ? 0 : 5 * rand(0, 3));
+    return { skill: 'time', sub: 'wind', interactive: 'gear', target: { h: hr, m }, setT: from, ring: L <= 3,
+      printVisual: clockSvg(null, 0, false), ask: `Wind the clock to ${ok}.`, speak: `Wind the clock forward or back to show ${said}. Watch the short hand as the long hand goes round.`, ans: ok, choices: [{ v: ok, ok: true }],
+      explain: `At ${ok} the long hand points to ${m === 0 ? 12 : m / 5}. The short hand is ${m === 0 ? `right on ${hr}` : `${m < 20 ? 'a little past' : m < 40 ? 'about halfway past' : 'most of the way past'} ${hr}, on its way to ${hr % 12 + 1}`}${m >= 40 ? `. It is close to ${hr % 12 + 1}, but it is still ${hr} o'clock-something` : ''}.` };
+  }
+  if (L !== 5 && rng() < 0.4) {
     const hr = ((h - 1) % 12) + 1, startH = hr === 12 && m === 0 ? 6 : 12;
     return { skill: 'time', sub: 'set', interactive: 'clock', target: { h: hr, m }, setH: startH, setM: 0, ring: L <= 3,
       printVisual: clockSvg(null, 0, L <= 3), ask: `Show ${ok} on the clock.`, speak: `Move the clock hands to show ${said}.`, ans: ok, choices: [{ v: ok, ok: true }],
       explain: `For ${ok}, the long hand points to ${m === 0 ? 12 : m / 5} and the short hand points ${m ? 'just past' : 'to'} ${hr}.` };
+  }
+  if (L === 5) {
+    const hr = ((h - 1) % 12) + 1, nx = hr % 12 + 1;
+    return { skill: 'time', sub: 'near', visual: clockSvg(h, m, false, 'demo'), demoFrom: (hr % 12) * 60, demoTo: (hr % 12) * 60 + m, demoRing: false,
+      ask: 'What time is it? Careful with the short hand!', speak: 'What time does the clock show? Look carefully: has the short hand reached the next number yet?', ans: ok, choices,
+      explain: `The short hand is close to ${nx}, but it hasn't reached it yet, so the hour is still ${hr}. The long hand points to ${m / 5}, which is ${m} minutes. It is ${ok}${said !== ok ? ` (${said})` : ''}.` };
   }
   return { skill: 'time', sub: 'read', visual: clockSvg(h, m, L <= 3), ask: 'What time is it?', speak: 'What time does the clock show? The short hand shows the hour.', ans: ok, choices, explain: `The short hand points ${m ? 'past' : 'to'} ${h}, and the long hand points to ${m === 0 ? '12' : m / 5}. It is ${ok}${said !== ok ? ` (${said})` : ''}.` };
 }
@@ -939,7 +1031,7 @@ const HANDS = {
   patterns: 'Hop along stepping stones counting by 5s, then by 10s. Pair up socks from the laundry: even or odd?',
   arrays: 'Lay out acorns or stones in rows on a wool cloth: 3 rows of 4, then 4 rows of 3. Same number?',
   money: 'Play shop with real coins. Price a few things at the nature table and let your child pay and make change.',
-  time: 'Make a clock from a paper plate with a short and a long hand. Set it to bedtime, lunch and the walk to school.',
+  time: 'Wind a real clock (or a toy one) slowly from 5:00 to 6:00 and watch the short hand creep. At 5:50 it is almost at 6, but it is still 5 o’clock-something. Then make a clock from a paper plate with a short and a long hand. Set it to bedtime, lunch and the walk to school.',
   measure: 'Measure a foot, a leaf and a stick with a ruler or a string. Which is longest? By how much?',
   graphs: 'Count the birds or the colors of leaves on a walk. Make a picture graph together with crayons back home.',
   shapes: 'Fold paper or cut an apple into halves and fourths. Are the parts really equal?',
@@ -1062,7 +1154,7 @@ function answer(idx) {
   if (p.done || p.wrong.includes(idx)) return;
   const c = p.choices[idx];
   if (c.ok) gotIt(p);
-  else { p.wrong.push(idx); missed(p, c.tag, 'Not quite. Have another look.'); }
+  else { p.wrong.push(idx); missed(p, c.tag, p.sub === 'near' && c.tag === 'read the next hour' ? 'Look again: has the short hand reached that number yet? Watch the hands wind up from the hour.' : 'Not quite. Have another look.'); }
   render(!c.ok && !p.done);
 }
 /* typing mode: numeric answers get a number pad instead of four choices */
@@ -1147,7 +1239,30 @@ function reviewCard(id, first) {
   if (c.box >= REVIEW_DAYS.length) { state.cards = state.cards.filter(x => x !== c); state.cleared = (state.cleared || 0) + 1; sess.cleared++; return; }
   c.due = startOfDay() + DAY * REVIEW_DAYS[c.box];
 }
+/* "I helped with this one": a grown-up's tick turns the problem into one to practice again, even if it was
+   right on the first try. Applied when leaving the problem, so the box can be ticked or unticked until Next.
+   It counts as a miss for review and weak spots, but is left out of leveling (neither up nor down). */
+function settleHelp(p) {
+  if (!p || !p.helped || !p.done || p.helpSettled) return;
+  p.helpSettled = true;
+  const first = p.tries === 0 && !p.revealed;
+  state.helped = (state.helped || 0) + 1;
+  if (!first) { save(); return; } // already counted as a miss
+  if (p.kind !== 'stretch') {
+    const key = p.weakKey || weakKey(p), w = state.weak[key];
+    state.weak[key] = { skill: p.skill, level: p.level, sub: p.sub || '', misses: (w ? w.misses : 0) + 1, streak: 0, last: Date.now() };
+  }
+  if (p.kind === 'again') {
+    const c = state.cards.find(x => x.id === p.card);
+    if (c) Object.assign(c, { box: 0, due: startOfDay() + DAY, misses: c.misses + 1 }); else addCard(p);
+  } else if (p.kind !== 'stretch') addCard(p);
+  // a helped right answer isn't his own, so it doesn't count toward leveling up
+  const list = p.kind === 'current' ? state.rec[p.skill] : p.kind === 'stretch' ? state.stretch[p.skill] : null;
+  if (list && list[list.length - 1] === true) list.pop();
+  save();
+}
 function next() {
+  settleHelp(sess.probs[sess.i]);
   if (sess.i < sess.probs.length - 1) { sess.i++; render(); autoSay(); return; }
   const used = [...new Set(sess.probs.map(p => p.skill))];
   lastChanges = adjustLevels(used);
@@ -1298,13 +1413,16 @@ function renderPlay() {
     <span class="skill-label">${SKILLS[p.skill].name} · level ${p.level}${KIND_LABEL[p.kind] || ''}${p.world ? ` · ${esc(p.world)}` : ''}</span>
     ${canSpeak ? `<button class="say" data-act="say" aria-label="Read it out loud">${speakerIcon}</button>` : ''}
   </div>
+  <label class="helped-box" title="For grown-ups: tick this if you helped. The problem will come back later as a weak spot.">
+    <input type="checkbox" data-act="helped" ${p.helped ? 'checked' : ''}><span>I helped with this one</span></label>
   <div class="problem" id="problem">
     ${p.story ? `<p class="story">${esc(p.story)}</p>` : ''}
     ${p.q ? `<div class="q ${p.qClass || ''}">${p.skill === 'order' && p.q.includes('−') ? flipHtml(p) : p.q}</div>` : ''}
     ${p.visual || ''}
     ${p.ask ? `<div class="ask">${esc(p.ask)}</div>` : ''}
+    ${p.demoFrom != null && (p.tries > 0 || p.done) ? '<button class="link" data-act="demo">Watch the hands wind up from the hour</button>' : ''}
   </div>
-  ${p.interactive === 'clock' ? setClockHtml(p) : typeable(p) ? keypadHtml(p) : `<div class="choices ${p.wordy ? 'wordy' : ''} ${p.pics ? 'pics' : ''}">${choices}</div>`}
+  ${p.interactive === 'clock' ? setClockHtml(p) : p.interactive === 'gear' ? gearClockHtml(p) : typeable(p) ? keypadHtml(p) : `<div class="choices ${p.wordy ? 'wordy' : ''} ${p.pics ? 'pics' : ''}">${choices}</div>`}
   <div class="feedback">${fb}</div>
   ${p.done ? `<div class="next-row"><button class="start" data-act="next" id="next">${last ? 'See my stars' : 'Next'}</button></div>` : ''}
   <button class="link" data-act="home" style="align-self:flex-start">Stop and go home</button>`;
@@ -1563,15 +1681,19 @@ app.addEventListener('click', e => {
   const act = b.dataset.act;
   if (act === 'start') startSession();
   else if (act === 'pick') answer(+b.dataset.i);
+  else if (act === 'helped') { sess.probs[sess.i].helped = b.checked; }
   else if (act === 'flip') { toggleFlip(sess.probs[sess.i], +b.dataset.i); render(); }
   else if (act === 'key') keyIn(b.dataset.k);
   else if (act === 'ck') moveHand(b.dataset.hand, +b.dataset.d);
   else if (act === 'ck-check') checkClock();
+  else if (act === 'gear') gearMove(+b.dataset.d);
+  else if (act === 'gear-watch') gearWatch();
+  else if (act === 'demo') demoRead();
   else if (act === 'mode') { state.answerMode = b.dataset.v; save(); render(); }
   else if (act === 'print') printRound();
   else if (act === 'next') next();
   else if (act === 'say') { const p = sess.probs[sess.i]; say(p.speak || spoken(p.q || '')); }
-  else if (act === 'home') { screen = 'home'; confirmReset = false; confirmWipe = false; wiped = false; confirmTopic = null; render(); }
+  else if (act === 'home') { if (screen === 'play' && sess) settleHelp(sess.probs[sess.i]); screen = 'home'; confirmReset = false; confirmWipe = false; wiped = false; confirmTopic = null; render(); }
   else if (act === 'parent') { screen = 'parent'; render(); }
   else if (act === 'chip') { state.on[b.dataset.k] = !state.on[b.dataset.k]; save(); render(); }
   else if (act === 'lvl') { const k = b.dataset.k; state.levels[k] = Math.max(1, Math.min(SKILLS[k].levels.length, state.levels[k] + +b.dataset.d)); state.rec[k] = []; save(); render(); }
